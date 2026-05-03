@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import { Calendar, Clock, User, Phone, MapPin, ChevronRight, Bell } from 'lucide-react';
+import { Calendar, Clock, Phone, ChevronRight, Bell, User } from 'lucide-react';
 
 const MyAppointments = () => {
-  const { user } = useAuth();
+  const { user }   = useAuth();
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,      setLoading]      = useState(true);
 
   const fetchAppointments = async () => {
     try {
@@ -14,114 +14,123 @@ const MyAppointments = () => {
       const res = await api.get('/leads/appointments');
       setAppointments(res.data);
     } catch (err) {
-      console.error('Failed to fetch appointments', err);
+      console.error('Fetch appointments failed', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
+  useEffect(() => { fetchAppointments(); }, []);
 
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  };
+  const isToday = (dateStr) =>
+    new Date(dateStr).toDateString() === new Date().toDateString();
 
-  const formatTime = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (dateStr) =>
+    new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-  const isToday = (dateStr) => {
+  const formatMonthDay = (dateStr) => {
     const d = new Date(dateStr);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
+    return {
+      month: d.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase(),
+      day:   d.getDate(),
+      time:  formatTime(dateStr),
+    };
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', gap: '16px' }} className="appointments-header">
+    <div>
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 2.5rem)', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Calendar className="text-primary" size={clampIcon(32, 40)} /> My Appointments
+          <h1 className="page-title" style={{ fontSize: 'var(--h1)' }}>
+            <Calendar size={24} style={{ color: 'var(--primary)' }} /> My Appointments
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>
-            Your scheduled callbacks and meetings with potential leads
-          </p>
+          <p className="page-subtitle">Your scheduled callbacks and meetings with potential leads</p>
         </div>
-        <div className="badge badge-primary appointment-count-badge" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
-          {appointments.length} <span className="hidden-mobile">Scheduled</span><span className="mobile-only">Slots</span>
-        </div>
+        <span className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+          {appointments.length} Scheduled
+        </span>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px' }}>Loading appointments...</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="glass-panel" style={{ display: 'flex', overflow: 'hidden', borderRadius: 'var(--r-lg)' }}>
+              <div className="skeleton" style={{ width: 110, flexShrink: 0, borderRadius: 0 }} />
+              <div style={{ flex: 1, padding: 'var(--card-p)' }}>
+                <div className="skeleton" style={{ height: 16, width: '40%', marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 12, width: '60%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : appointments.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '80px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          <Calendar size={64} style={{ opacity: 0.1, margin: '0 auto 24px' }} />
-          <h2>No upcoming appointments</h2>
-          <p>Schedule appointments during your workflow to see them here.</p>
+        <div className="glass-panel" style={{ padding: '80px 40px', textAlign: 'center' }}>
+          <Calendar size={64} style={{ opacity: 0.08, margin: '0 auto 20px', display: 'block' }} />
+          <h3 style={{ marginBottom: 8 }}>No upcoming appointments</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Schedule appointments during your workflow to see them here.
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {appointments.map(app => {
-            const fields = app.fields || {};
-            const name = fields.Name || fields.name || 'Unknown Client';
-            const phone = fields.Phone || fields.phone || fields.Mobile || 'N/A';
-            const today = isToday(app.appointmentDt);
+            const fields  = app.fields || {};
+            const name    = fields.Name || fields.name || 'Unknown Client';
+            const phone   = fields.Phone || fields.phone || fields.Mobile || 'N/A';
+            const today   = isToday(app.appointmentDt);
+            const { month, day, time } = formatMonthDay(app.appointmentDt);
 
             return (
-              <div 
-                key={app._id} 
-                className="glass-panel appointment-card" 
-                style={{ 
-                  padding: '0', 
-                  overflow: 'hidden',
-                  border: today ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                  display: 'flex'
-                }}
+              <div
+                key={app._id}
+                className="glass-panel appt-card"
+                style={{ border: today ? '1px solid var(--primary)' : undefined }}
               >
-                <div className="appointment-date-side" style={{ 
-                  width: '120px', 
-                  background: today ? 'var(--primary)' : 'var(--bg-surface-hover)',
-                  color: today ? 'white' : 'var(--text-primary)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '20px',
-                  flexShrink: 0
-                }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px', opacity: 0.8 }}>
-                    {today ? 'TODAY' : new Date(app.appointmentDt).toLocaleDateString('en-IN', { month: 'short' })}
+                {/* Date sidebar */}
+                <div
+                  className="appt-date-col"
+                  style={{
+                    background: today
+                      ? 'linear-gradient(160deg, var(--primary), var(--violet))'
+                      : 'var(--bg-surface-2)',
+                    color: today ? '#fff' : 'var(--text-primary)',
+                  }}
+                >
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: today ? 0.85 : 0.6 }}>
+                    {today ? 'TODAY' : month}
                   </div>
-                  <div style={{ fontSize: '2rem', fontWeight: '800' }}>
-                    {new Date(app.appointmentDt).getDate()}
-                  </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                    {formatTime(app.appointmentDt)}
-                  </div>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1 }}>{day}</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 2, opacity: 0.9 }}>{time}</div>
                 </div>
 
-                <div className="appointment-content" style={{ flex: 1, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span> {today && <Bell size={18} className="text-primary" style={{ animation: 'bounce 2s infinite', flexShrink: 0 }} />}
+                {/* Content */}
+                <div className="appt-content">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {name}
+                      {today && <Bell size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} className="animate-bounce" />}
                     </h3>
-                    <div className="appointment-meta" style={{ display: 'flex', gap: '20px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={16} /> {phone}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={16} /> <span className="hidden-mobile">Scheduled by</span> {app.agentName}</span>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Phone size={13} /> {phone}</span>
+                      {app.agentName && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><User size={13} /> {app.agentName}</span>
+                      )}
+                      {app.remarks && (
+                        <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>"{app.remarks}"</span>
+                      )}
                     </div>
-                    {app.remarks && (
-                      <div style={{ marginTop: '12px', padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: '8px', fontSize: '0.9rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                        "{app.remarks}"
+                    {today && (
+                      <div style={{ marginTop: 10 }}>
+                        <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                          Appointment Today
+                        </span>
                       </div>
                     )}
                   </div>
-                  <button className="btn btn-primary appointment-action-btn" style={{ padding: '12px 24px', flexShrink: 0 }}>
-                    <span className="hidden-mobile">Contact Now</span> <ChevronRight size={18} />
+
+                  <button className="btn btn-primary appt-action-btn" style={{ padding: '10px 20px', flexShrink: 0 }}>
+                    <span className="hide-mobile">Contact Now</span>
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
@@ -129,47 +138,50 @@ const MyAppointments = () => {
           })}
         </div>
       )}
+
       <style>{`
-        .appointments-header {
-          flex-direction: row;
+        .appt-card {
+          display: flex;
+          overflow: hidden;
+          transition: transform var(--t-base), box-shadow var(--t-base);
+          padding: 0;
         }
-        @media (max-width: 768px) {
-          .appointments-header {
-            flex-direction: column;
-            align-items: flex-start !important;
-          }
-          .appointment-count-badge {
+        .appt-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+        .appt-date-col {
+          width: 110px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          padding: 20px 12px;
+          flex-shrink: 0;
+          text-align: center;
+        }
+        .appt-content {
+          flex: 1;
+          padding: var(--card-p);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          min-width: 0;
+        }
+        @media (max-width: 640px) {
+          .appt-card { flex-direction: column; }
+          .appt-date-col {
             width: 100%;
-            justify-content: center;
+            flex-direction: row;
+            gap: 16px;
+            padding: 12px 18px;
+            justify-content: flex-start;
           }
-          .appointment-card {
-            flex-direction: column;
-          }
-          .appointment-date-side {
-            width: 100% !important;
-            flex-direction: row !important;
-            gap: 20px;
-            padding: 12px !important;
-            justify-content: center !important;
-          }
-          .appointment-date-side div {
-            margin: 0 !important;
-          }
-          .appointment-content {
-            flex-direction: column;
-            align-items: stretch !important;
-            gap: 16px !important;
-          }
-          .appointment-action-btn {
-            width: 100%;
-            justify-content: center;
-          }
+          .appt-content { flex-direction: column; align-items: stretch; }
+          .appt-action-btn { width: 100%; justify-content: center; }
         }
       `}</style>
     </div>
   );
 };
-
-const clampIcon = (min, max) => `clamp(${min}px, 5vw, ${max}px)`;
 
 export default MyAppointments;

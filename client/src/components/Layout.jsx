@@ -1,101 +1,295 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, NavLink } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Menu, Sparkles } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Menu, Sparkles, Bell,
+  LayoutDashboard, PhoneCall, Star, Calendar, MoreHorizontal
+} from 'lucide-react';
+
+/* Page title map */
+const PAGE_TITLES = {
+  '/dashboard':    'Dashboard',
+  '/users':        'User Management',
+  '/upload':       'Data Import',
+  '/contacts':     'All Contacts',
+  '/workflow':     'Agent Workflow',
+  '/leads':        'My Leads',
+  '/appointments': 'My Appointments',
+  '/reports':      'Reports & Export',
+};
 
 const Layout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const [isCollapsed, setIsCollapsed]     = useState(false);
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const role = user?.role || 'agent';
+  const pageTitle = PAGE_TITLES[location.pathname] || 'Spike CRM';
+
+  /* Mobile bottom-nav items per role */
+  const mobileNav = role === 'agent'
+    ? [
+        { path: '/dashboard',    icon: LayoutDashboard, label: 'Home' },
+        { path: '/workflow',     icon: PhoneCall,       label: 'Workflow' },
+        { path: '/leads',        icon: Star,            label: 'Leads' },
+        { path: '/appointments', icon: Calendar,        label: 'Appts' },
+      ]
+    : [
+        { path: '/dashboard',    icon: LayoutDashboard, label: 'Home' },
+        { path: '/contacts',     icon: Star,            label: 'Contacts' },
+        { path: '/leads',        icon: Star,            label: 'Leads' },
+        { path: '/reports',      icon: MoreHorizontal,  label: 'More' },
+      ];
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      minHeight: '100vh', 
-      background: 'var(--bg-color)'
-    }} className="layout-root">
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+    <div className="layout-root">
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
       />
-      
-      <div style={{ 
-        flex: 1, 
-        display: 'flex',
-        flexDirection: 'column',
-        minWidth: 0,
-        height: '100vh',
-        overflow: 'hidden',
-        transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      }} className="main-wrapper">
-        {/* Mobile Header */}
-        <div 
-          className="mobile-only"
-          style={{
-            height: 'var(--header-height)',
-            background: 'var(--bg-surface)',
-            borderBottom: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 20px',
-            zIndex: 900,
-            flexShrink: 0
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-              <Sparkles size={16} />
-            </div>
-            <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>Spike CRM</span>
-          </div>
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '8px' }}
-          >
-            <Menu size={24} />
-          </button>
-        </div>
 
-        {/* Main Content Area */}
-        <div style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
-          width: '100%'
-        }} className="main-content">
-          <div className="animate-fade-in" style={{ 
-            maxWidth: '1600px', 
-            margin: '0 auto', 
-            padding: 'var(--container-padding)' 
-          }}>
+      {/* Main wrapper — shifts right on desktop */}
+      <div
+        className="layout-main"
+        style={{
+          '--sidebar-offset': isCollapsed
+            ? 'var(--sidebar-collapsed-width)'
+            : 'var(--sidebar-width)',
+        }}
+      >
+        {/* ── Top Bar ── */}
+        <header className="topbar">
+          {/* Mobile: hamburger + logo */}
+          <div className="topbar-left">
+            <button
+              className="btn btn-ghost btn-icon topbar-hamburger"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            <div className="topbar-brand-mobile">
+              <div className="topbar-logo">
+                <Sparkles size={14} />
+              </div>
+              <span>Spike CRM</span>
+            </div>
+            {/* Desktop: page title */}
+            <h1 className="topbar-page-title hide-mobile">{pageTitle}</h1>
+          </div>
+
+          <div className="topbar-right">
+            {/* Live indicator */}
+            <div className="topbar-live-pill">
+              <span className="live-dot" />
+              <span className="hide-mobile">Live</span>
+            </div>
+
+            {/* Role chip */}
+            <div
+              className="topbar-role-chip"
+              style={{
+                background: role === 'admin'
+                  ? 'rgba(245,158,11,0.12)'
+                  : role === 'tl'
+                  ? 'var(--primary-light)'
+                  : 'var(--success-light)',
+                color: role === 'admin' ? '#f59e0b' : role === 'tl' ? 'var(--primary)' : 'var(--success)',
+              }}
+            >
+              {role === 'admin' ? 'Admin' : role === 'tl' ? 'Team Lead' : 'Agent'}
+            </div>
+          </div>
+        </header>
+
+        {/* ── Page content ── */}
+        <main className="layout-content">
+          <div className="layout-content-inner animate-fade-up">
             <Outlet />
           </div>
-        </div>
+        </main>
+
+        {/* ── Mobile Bottom Navigation ── */}
+        <nav className="bottom-nav">
+          {mobileNav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `bottom-nav-item${isActive ? ' active' : ''}`
+                }
+              >
+                <Icon size={22} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
       </div>
 
       <style>{`
         .layout-root {
-          --dynamic-sidebar-width: ${isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'};
+          display: flex;
+          min-height: 100vh;
+          background: var(--bg-base);
         }
-        
+
+        /* Main area */
+        .layout-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          height: 100vh;
+          overflow: hidden;
+        }
+
+        /* Desktop: offset for sidebar */
         @media (min-width: 1025px) {
-          .main-wrapper {
-            margin-left: var(--dynamic-sidebar-width);
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          .layout-main {
+            margin-left: var(--sidebar-offset);
+            transition: margin-left var(--t-base) var(--ease);
           }
         }
 
+        /* ── Top Bar ── */
+        .topbar {
+          height: var(--header-height);
+          background: rgba(255,255,255,0.85);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border-bottom: 1px solid var(--border);
+          box-shadow: 0 1px 12px rgba(37,99,235,0.07);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 20px;
+          flex-shrink: 0;
+          z-index: 100;
+        }
+        .topbar-left  { display: flex; align-items: center; gap: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+        .topbar-hamburger { display: none; }
         @media (max-width: 1024px) {
-          .main-wrapper {
-            margin-left: 0;
+          .topbar-hamburger { display: flex; }
+        }
+
+        .topbar-brand-mobile {
+          display: none;
+          align-items: center;
+          gap: 8px;
+          font-weight: 800;
+          font-size: 0.95rem;
+        }
+        @media (max-width: 1024px) {
+          .topbar-brand-mobile { display: flex; }
+        }
+
+        .topbar-logo {
+          width: 28px; height: 28px;
+          border-radius: 7px;
+          background: linear-gradient(135deg, var(--primary), var(--violet));
+          display: flex; align-items: center; justify-content: center;
+          color: #fff;
+        }
+
+        .topbar-page-title {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        /* Live pill */
+        .topbar-live-pill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: var(--r-full);
+          background: rgba(5,150,105,0.10);
+          color: var(--success);
+          font-size: 0.72rem;
+          font-weight: 700;
+          border: 1px solid rgba(5,150,105,0.18);
+        }
+        .live-dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: var(--success);
+          animation: pulseRing 2s infinite;
+        }
+
+        /* Role chip */
+        .topbar-role-chip {
+          padding: 4px 10px;
+          border-radius: var(--r-full);
+          font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: capitalize;
+        }
+
+        /* ── Content area ── */
+        .layout-content {
+          flex: 1;
+          overflow-y: auto;
+          padding-bottom: 0;
+        }
+        /* Pad bottom on mobile for bottom nav */
+        @media (max-width: 1024px) {
+          .layout-content { padding-bottom: var(--bottom-nav-height); }
+        }
+        .layout-content-inner {
+          max-width: 1600px;
+          margin: 0 auto;
+          padding: var(--page-py) var(--page-px);
+        }
+
+        /* ── Bottom Navigation (mobile only) ── */
+        .bottom-nav {
+          display: none;
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          height: var(--bottom-nav-height);
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border-top: 1px solid var(--border);
+          box-shadow: 0 -4px 20px rgba(37,99,235,0.08);
+          z-index: 900;
+        }
+        @media (max-width: 1024px) {
+          .bottom-nav {
+            display: flex;
+            align-items: stretch;
           }
         }
+        .bottom-nav-item {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          text-decoration: none;
+          color: var(--text-muted);
+          font-size: 0.62rem;
+          font-weight: 700;
+          transition: color var(--t-fast);
+          padding: 6px 4px;
+        }
+        .bottom-nav-item.active { color: var(--primary); }
+        .bottom-nav-item:hover  { color: var(--text-secondary); }
       `}</style>
     </div>
   );
 };
 
 export default Layout;
-
-

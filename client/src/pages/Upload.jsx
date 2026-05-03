@@ -2,102 +2,88 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import api from '../utils/api';
-import { UploadCloud, FileSpreadsheet, Trash2, Download, Share2, X } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, Trash2, Download, Share2, X, CheckCircle2 } from 'lucide-react';
 
 const Upload = () => {
-  const { user } = useAuth();
+  const { user }   = useAuth();
   const { socket } = useSocket();
-  const [agents, setAgents] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [selectedAgent, setSelectedAgent] = useState('');
-  const [batchName, setBatchName] = useState('');
-  const [file, setFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [agents,         setAgents]         = useState([]);
+  const [batches,        setBatches]        = useState([]);
+  const [selectedAgent,  setSelectedAgent]  = useState('');
+  const [batchName,      setBatchName]      = useState('');
+  const [file,           setFile]           = useState(null);
+  const [isUploading,    setIsUploading]    = useState(false);
+  const [isDragging,     setIsDragging]     = useState(false);
+  const [handoverBatch,  setHandoverBatch]  = useState(null);
+  const [targetAgentId,  setTargetAgentId]  = useState('');
   const fileInputRef = useRef(null);
-  
-  // Handover state
-  const [handoverBatch, setHandoverBatch] = useState(null);
-  const [targetAgentId, setTargetAgentId] = useState('');
 
   const fetchData = async () => {
     try {
-      const usersEndpoint = user?.role === 'admin' ? '/users' : '/users/my-agents';
-      const [usersRes, batchesRes] = await Promise.all([
-        api.get(usersEndpoint),
-        api.get('/upload/batches')
-      ]);
+      const endpoint = user?.role === 'admin' ? '/users' : '/users/my-agents';
+      const [usersRes, batchesRes] = await Promise.all([api.get(endpoint), api.get('/upload/batches')]);
       setAgents(usersRes.data.filter(u => u.role === 'agent' && u.active));
       setBatches(batchesRes.data);
     } catch (err) {
-      console.error('Failed to fetch data', err);
+      console.error('Fetch data failed', err);
     }
   };
 
   useEffect(() => {
     fetchData();
-    if (socket) {
-      socket.on('batch_uploaded', fetchData);
-      socket.on('users_updated', fetchData);
-      socket.on('contacts_updated', fetchData);
-    }
-    return () => {
-      if (socket) {
-        socket.off('batch_uploaded', fetchData);
-        socket.off('users_updated', fetchData);
-        socket.off('contacts_updated', fetchData);
-      }
-    };
+    if (!socket) return;
+    const handler = () => fetchData();
+    ['batch_uploaded', 'users_updated', 'contacts_updated'].forEach(e => socket.on(e, handler));
+    return () => ['batch_uploaded', 'users_updated', 'contacts_updated'].forEach(e => socket.off(e, handler));
   }, [socket, user]);
 
+  const validateFile = (f) => {
+    if (!f) return false;
+    const valid = f.name.endsWith('.csv') || f.name.endsWith('.xlsx') || f.name.endsWith('.xls');
+    if (!valid) { alert('Please select a CSV or Excel file'); return false; }
+    if (f.size > 10 * 1024 * 1024) { alert('File must be less than 10MB'); return false; }
+    return true;
+  };
+
   const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected && (selected.name.endsWith('.csv') || selected.name.endsWith('.xlsx') || selected.name.endsWith('.xls'))) {
-      if (selected.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
-        return;
-      }
-      setFile(selected);
-    } else {
-      alert('Please select a valid CSV or Excel file');
-    }
+    const f = e.target.files[0];
+    if (validateFile(f)) setFile(f);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (validateFile(f)) setFile(f);
   };
 
   const handleUpload = async () => {
-    if (!selectedAgent || !file) {
-      alert('Please select an agent and a file');
-      return;
-    }
-
+    if (!selectedAgent || !file) { alert('Please select an agent and a file'); return; }
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('agentId', selectedAgent);
-    if (batchName) formData.append('batchName', batchName);
-
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('agentId', selectedAgent);
+    if (batchName) fd.append('batchName', batchName);
     try {
-      await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setFile(null);
       setBatchName('');
       if (fileInputRef.current) fileInputRef.current.value = '';
       alert('File uploaded successfully!');
-      // fetchData() will be called via socket event
-    } catch (error) {
-      alert(error.response?.data?.error || 'Upload failed');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Upload failed');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDeleteBatch = async (batchId) => {
-    if (window.confirm('Are you sure you want to delete this batch and ALL its contacts? This cannot be undone.')) {
-      try {
-        await api.delete(`/contacts/batch/${batchId}`);
-        fetchData();
-      } catch (error) {
-        alert(error.response?.data?.error || 'Delete failed');
-      }
+    if (!window.confirm('Delete this batch and ALL its contacts? This cannot be undone.')) return;
+    try {
+      await api.delete(`/contacts/batch/${batchId}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Delete failed');
     }
   };
 
@@ -108,64 +94,46 @@ const Upload = () => {
       setTargetAgentId('');
       fetchData();
       alert('Batch handed over successfully!');
-    } catch (error) {
-      alert(error.response?.data?.error || 'Handover failed');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Handover failed');
     }
   };
 
   const downloadTemplate = async () => {
     try {
-      const response = await api.get('/upload/template?format=csv', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'crm-template.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
+      const res = await api.get('/upload/template?format=csv', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url; a.setAttribute('download', 'crm-template.csv');
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch {
       alert('Failed to download template');
     }
   };
 
   return (
     <div>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        marginBottom: '32px',
-        gap: '20px'
-      }} className="upload-header-container">
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <UploadCloud className="text-primary" size={32} /> Data Import
+          <h1 className="page-title" style={{ fontSize: 'var(--h1)' }}>
+            <UploadCloud size={24} style={{ color: 'var(--primary)' }} /> Data Import
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Upload CSV/Excel contacts and assign them to agents in real-time</p>
+          <p className="page-subtitle">Upload CSV/Excel contacts and assign them to agents in real-time</p>
         </div>
       </div>
 
-      <div className="upload-grid" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 2fr', 
-        alignItems: 'start',
-        gap: '24px'
-      }}>
-
-        {/* Upload Form */}
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileSpreadsheet size={20} /> New Upload
+      <div className="upload-grid">
+        {/* Upload form */}
+        <div className="glass-panel" style={{ padding: 'var(--card-p)' }}>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileSpreadsheet size={15} style={{ color: 'var(--primary)' }} /> New Upload
           </h2>
-          
+
           <div className="input-group">
             <label>Assign to Agent *</label>
             <select className="input-field" value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
-              <option value="">-- Select Recipient (TL or Agent) --</option>
-              {agents.map(a => (
-                <option key={a._id} value={a._id}>
-                  {a.name}
-                </option>
-              ))}
+              <option value="">-- Select Agent --</option>
+              {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
             </select>
           </div>
 
@@ -174,131 +142,126 @@ const Upload = () => {
             <input type="text" className="input-field" placeholder="e.g. Q3 Premium Leads" value={batchName} onChange={e => setBatchName(e.target.value)} />
           </div>
 
-          <div className="input-group" style={{ marginTop: '24px' }}>
-            <label>Select File *</label>
-            <div 
-              style={{ 
-                border: '2px dashed var(--border-color)', borderRadius: '12px', padding: '32px 20px', 
-                textAlign: 'center', cursor: 'pointer', background: 'var(--bg-surface-hover)',
-                transition: 'all 0.2s',
-                borderColor: file ? 'var(--primary)' : 'var(--border-color)'
-              }}
-              onClick={() => fileInputRef.current.click()}
-            >
-              {file ? (
-                <div>
-                  <FileSpreadsheet size={32} className="text-success" style={{ margin: '0 auto 12px' }} />
-                  <div style={{ fontWeight: '600', color: 'var(--success)' }}>{file.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{(file.size / 1024).toFixed(1)} KB</div>
-                </div>
-              ) : (
-                <div>
-                  <UploadCloud size={32} style={{ margin: '0 auto 12px', color: 'var(--text-secondary)' }} />
-                  <div style={{ fontWeight: '500' }}>Click to browse file</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>CSV or Excel files only (Max 10MB)</div>
-                </div>
-              )}
-            </div>
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
+          {/* Drag-drop zone */}
+          <div
+            className="dropzone"
+            style={{ borderColor: isDragging ? 'var(--primary)' : file ? 'var(--success)' : 'var(--border)' }}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+          >
+            {file ? (
+              <>
+                <CheckCircle2 size={36} style={{ color: 'var(--success)', marginBottom: 10 }} />
+                <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>{file.name}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{(file.size / 1024).toFixed(1)} KB</div>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ marginTop: 10, fontSize: '0.75rem', padding: '4px 10px' }}
+                  onClick={e => { e.stopPropagation(); setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                >
+                  Remove
+                </button>
+              </>
+            ) : (
+              <>
+                <UploadCloud size={36} style={{ color: isDragging ? 'var(--primary)' : 'var(--text-muted)', marginBottom: 10 }} />
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>{isDragging ? 'Drop to upload' : 'Drag & drop or click to browse'}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>CSV or Excel files · Max 10MB</div>
+              </>
+            )}
           </div>
+          <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
 
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%', marginTop: '24px', padding: '14px' }}
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: 18, height: 46 }}
             onClick={handleUpload}
             disabled={isUploading || !file || !selectedAgent}
           >
-            {isUploading ? 'Uploading & Processing...' : 'Upload Data'}
+            {isUploading
+              ? <><span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block' }} /> Uploading…</>
+              : <><UploadCloud size={16} /> Upload Data</>
+            }
           </button>
-          
-          <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <button className="btn btn-outline" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={downloadTemplate}>
-              <Download size={14} /> Download CSV Template
+
+          <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <button className="btn btn-ghost" style={{ fontSize: '0.78rem' }} onClick={downloadTemplate}>
+              <Download size={13} /> Download CSV Template
             </button>
           </div>
         </div>
 
-        {/* Batch History */}
-        <div className="glass-panel" style={{ padding: '0' }}>
-          <div style={{ padding: '24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Upload History</h2>
-            <div className="badge badge-primary">{batches.length} Batches</div>
+        {/* Batch history */}
+        <div className="glass-panel" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', margin: 0 }}>Upload History</h2>
+            <span className="badge badge-primary">{batches.length} Batches</span>
           </div>
-          
           <div className="table-responsive">
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead style={{ background: 'var(--bg-surface-hover)' }}>
+            <table className="crm-table">
+              <thead>
                 <tr>
-                  <th style={{ padding: '16px 24px', fontWeight: '600' }}>Batch Details</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '600' }}>Agent</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '600' }}>Records</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '600' }}>Date</th>
-                  {['admin', 'tl'].includes(user?.role) && <th style={{ padding: '16px 24px', fontWeight: '600', textAlign: 'right' }}>Actions</th>}
+                  <th>Batch</th>
+                  <th>Agent</th>
+                  <th>Records</th>
+                  <th>Date</th>
+                  {['admin', 'tl'].includes(user?.role) && <th style={{ textAlign: 'right' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {batches.length === 0 ? (
-                  <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>No uploads yet</td></tr>
-                ) : (
-                  batches.map(b => (
-                    <tr key={b._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ fontWeight: '600' }}>{b.name}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{b.fileName}</div>
+                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No uploads yet</td></tr>
+                ) : batches.map(b => (
+                  <tr key={b._id}>
+                    <td>
+                      <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{b.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{b.fileName}</div>
+                    </td>
+                    <td><span className="badge badge-success">{b.agentName}</span></td>
+                    <td style={{ fontWeight: 700 }}>{b.totalContacts}</td>
+                    <td>
+                      <div style={{ fontSize: '0.875rem' }}>{new Date(b.uploadedAt).toLocaleDateString()}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{new Date(b.uploadedAt).toLocaleTimeString()}</div>
+                    </td>
+                    {['admin', 'tl'].includes(user?.role) && (
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          {user.role === 'tl' && (
+                            <button className="btn btn-primary btn-icon" title="Handover" onClick={() => { setHandoverBatch(b); setTargetAgentId(''); }}>
+                              <Share2 size={15} />
+                            </button>
+                          )}
+                          {user.role === 'admin' && (
+                            <button className="btn btn-ghost btn-icon" title="Delete" onClick={() => handleDeleteBatch(b._id)}>
+                              <Trash2 size={15} style={{ color: 'var(--danger)' }} />
+                            </button>
+                          )}
+                        </div>
                       </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <span className="badge badge-success">{b.agentName}</span>
-                      </td>
-                      <td style={{ padding: '16px 24px', fontWeight: '600' }}>{b.totalContacts}</td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div>{new Date(b.uploadedAt).toLocaleDateString()}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(b.uploadedAt).toLocaleTimeString()}</div>
-                      </td>
-                      {['admin', 'tl'].includes(user?.role) && (
-                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            {user.role === 'tl' && (
-                              <button className="btn btn-primary" style={{ padding: '6px' }} title="Handover to Agent" onClick={() => {
-                                setHandoverBatch(b);
-                                setTargetAgentId('');
-                              }}>
-                                <Share2 size={16} />
-                              </button>
-                            )}
-                            {user.role === 'admin' && (
-                              <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => handleDeleteBatch(b._id)}>
-                                <Trash2 size={16} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
+                    )}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
       {/* Handover Modal */}
       {handoverBatch && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', padding: '32px', background: 'var(--bg-color)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.2rem' }}>Handover Batch to Agent</h2>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setHandoverBatch(null)}>
-                <X size={20} />
-              </button>
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setHandoverBatch(null)}>
+          <div className="modal-box animate-fade-in">
+            <div className="modal-header">
+              <h2>Handover Batch</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setHandoverBatch(null)}><X size={18} /></button>
             </div>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Batch: <strong>{handoverBatch.name}</strong><br/>
-                Records: <strong>{handoverBatch.totalContacts}</strong>
-              </p>
+            <div style={{ background: 'var(--bg-surface-2)', borderRadius: 'var(--r-md)', padding: '12px 16px', marginBottom: 20, fontSize: '0.875rem' }}>
+              <div><span style={{ color: 'var(--text-muted)' }}>Batch: </span><strong>{handoverBatch.name}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>Records: </span><strong>{handoverBatch.totalContacts}</strong></div>
             </div>
-
             <div className="input-group">
               <label>Select Target Agent</label>
               <select className="input-field" value={targetAgentId} onChange={e => setTargetAgentId(e.target.value)}>
@@ -306,33 +269,35 @@ const Upload = () => {
                 {agents.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
               </select>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
               <button className="btn btn-outline" onClick={() => setHandoverBatch(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleHandover} disabled={!targetAgentId}>Confirm Handover</button>
             </div>
           </div>
         </div>
       )}
+
       <style>{`
-        .upload-header-container {
-          flex-direction: row;
-          align-items: center;
-        }
-        @media (max-width: 768px) {
-          .upload-header-container {
-            flex-direction: column;
-            align-items: flex-start !important;
-          }
-        }
         .upload-grid {
-          grid-template-columns: 1fr 2fr;
+          display: grid;
+          grid-template-columns: 340px 1fr;
+          gap: var(--gap);
+          align-items: start;
         }
         @media (max-width: 1024px) {
-          .upload-grid {
-            grid-template-columns: 1fr !important;
-          }
+          .upload-grid { grid-template-columns: 1fr; }
         }
+        .dropzone {
+          border: 2px dashed;
+          border-radius: var(--r-lg);
+          padding: 36px 24px;
+          text-align: center;
+          cursor: pointer;
+          transition: all var(--t-base);
+          background: var(--bg-surface-2);
+          margin-top: 4px;
+        }
+        .dropzone:hover { border-color: var(--primary); background: var(--bg-surface-hover); }
       `}</style>
     </div>
   );

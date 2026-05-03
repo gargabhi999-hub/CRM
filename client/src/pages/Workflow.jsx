@@ -2,25 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import api from '../utils/api';
-import { PhoneCall, Check, Clock, Database, CheckCircle2, LayoutPanelLeft, AlertCircle, RotateCw } from 'lucide-react';
+import {
+  PhoneCall, Check, Clock, Database, CheckCircle2,
+  LayoutPanelLeft, RotateCw, X, Calendar
+} from 'lucide-react';
 
 const DISPS = [
-  { key: 'Lead', label: 'Lead', color: 'var(--success)' },
-  { key: 'Appointment', label: 'Appointment', color: '#8b5cf6' },
-  { key: 'CallNotAnswered', label: 'Call Not Answered', color: 'var(--warning)' },
-  { key: 'Invalid', label: 'Invalid / Wrong No.', color: 'var(--danger)' },
-  { key: 'DoNotCall', label: 'Do Not Call', color: 'var(--text-secondary)' },
-  { key: 'CallBack', label: 'Call Back', color: '#06b6d4' },
+  { key: 'Lead',            label: 'Lead',              color: '#10b981', badgeClass: 'badge-success' },
+  { key: 'Appointment',     label: 'Appointment',       color: '#8b5cf6', badgeClass: 'badge-violet' },
+  { key: 'CallNotAnswered', label: 'Call Not Answered', color: '#f59e0b', badgeClass: 'badge-warning' },
+  { key: 'Invalid',         label: 'Invalid / Wrong No.',color: '#ef4444', badgeClass: 'badge-danger' },
+  { key: 'DoNotCall',       label: 'Do Not Call',       color: '#64748b', badgeClass: 'badge-muted' },
+  { key: 'CallBack',        label: 'Call Back',         color: '#06b6d4', badgeClass: 'badge-cyan' },
 ];
 
 const Workflow = () => {
-  const { user } = useAuth();
+  const { user }   = useAuth();
   const { socket } = useSocket();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [dispForm, setDispForm] = useState({ disposition: '', remarks: '', appointmentDt: '', leadAmount: '', callBackDt: '' });
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [dispForm,   setDispForm]   = useState({ disposition: '', remarks: '', appointmentDt: '', leadAmount: '', callBackDt: '' });
+  const [toasts,     setToasts]     = useState([]);
+
+  const addToast = (msg, type) =>
+    setToasts(p => [...p, { id: Date.now(), msg, type }]);
+  const removeToast = (id) =>
+    setToasts(p => p.filter(t => t.id !== id));
 
   const fetchNext = async () => {
     try {
@@ -28,7 +36,7 @@ const Workflow = () => {
       const res = await api.get('/contacts/queue');
       setData(res.data);
     } catch (err) {
-      console.error('Failed to fetch queue', err);
+      console.error('Queue fetch failed', err);
     } finally {
       setLoading(false);
     }
@@ -36,301 +44,255 @@ const Workflow = () => {
 
   useEffect(() => {
     fetchNext();
-
-    if (socket) {
-      socket.on('contacts_updated', fetchNext);
-      socket.on('batch_uploaded', fetchNext);
-      socket.on('contact_disposed', fetchNext);
-      socket.on('appointment_reminder', (data) => {
-        setNotifications(prev => [...prev, {
-          id: Date.now(),
-          type: 'appointment',
-          message: `Appointment reminder: ${data.contactName} in ${data.minutesUntil} minutes`,
-          data
-        }]);
-      });
-      socket.on('callback_due', (data) => {
-        setNotifications(prev => [...prev, {
-          id: Date.now(),
-          type: 'callback',
-          message: `Callback due: ${data.contactName}`,
-          data
-        }]);
-      });
-    }
-
+    if (!socket) return;
+    socket.on('contacts_updated',  fetchNext);
+    socket.on('batch_uploaded',    fetchNext);
+    socket.on('contact_disposed',  fetchNext);
+    socket.on('appointment_reminder', (d) =>
+      addToast(`📅 Appointment: ${d.contactName} in ${d.minutesUntil} min`, 'appointment'));
+    socket.on('callback_due', (d) =>
+      addToast(`📞 Callback due: ${d.contactName}`, 'callback'));
     return () => {
-      if (socket) {
-        socket.off('contacts_updated', fetchNext);
-        socket.off('batch_uploaded', fetchNext);
-        socket.off('contact_disposed', fetchNext);
-        socket.off('appointment_reminder');
-        socket.off('callback_due');
-      }
+      socket.off('contacts_updated',  fetchNext);
+      socket.off('batch_uploaded',    fetchNext);
+      socket.off('contact_disposed',  fetchNext);
+      socket.off('appointment_reminder');
+      socket.off('callback_due');
     };
   }, [socket]);
 
   const handleDispose = async (e) => {
     e.preventDefault();
     if (!data?.contact) return;
-    
     if (dispForm.disposition === 'Lead' && (!dispForm.leadAmount || dispForm.leadAmount <= 0)) {
-      alert('Valid Lead Amount is mandatory');
-      return;
+      alert('Valid Lead Amount is mandatory'); return;
     }
-
     if (dispForm.disposition === 'Appointment' && !dispForm.appointmentDt) {
-      alert('Appointment date and time is required');
-      return;
+      alert('Appointment date is required'); return;
     }
-
     if (dispForm.disposition === 'CallBack' && !dispForm.callBackDt) {
-      alert('Callback date and time is required');
-      return;
+      alert('Callback date is required'); return;
     }
-
     setSubmitting(true);
     try {
       await api.post(`/contacts/${data.contact._id}/dispose`, dispForm);
       setDispForm({ disposition: '', remarks: '', appointmentDt: '', leadAmount: '', callBackDt: '' });
       fetchNext();
-    } catch (error) {
-      alert(error.response?.data?.error || 'Disposition failed');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Disposition failed');
     } finally {
       setSubmitting(false);
     }
   };
 
+  /* ── Loading ── */
   if (loading && !data) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Loading workflow...</div>;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 20 }}>
+        <div style={{ width: 48, height: 48, border: '3px solid var(--primary-light)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} className="animate-spin" />
+        <p style={{ color: 'var(--text-secondary)' }}>Loading workflow…</p>
+      </div>
+    );
   }
 
+  /* ── Empty ── */
   if (!data?.contact) {
     return (
-      <div className="glass-panel" style={{ padding: '80px', textAlign: 'center', marginTop: '40px' }}>
-        <CheckCircle2 size={64} className="text-success" style={{ margin: '0 auto 24px', opacity: 0.5 }} />
-        <h2 style={{ fontSize: '2rem', marginBottom: '12px' }}>Queue Completed!</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Great job! You have disposed all contacts in your queue.</p>
-        <button className="btn btn-primary" style={{ marginTop: '24px' }} onClick={fetchNext}>Refresh Queue</button>
+      <div>
+        <div className="glass-panel" style={{ padding: '80px 40px', textAlign: 'center', maxWidth: 500, margin: '60px auto' }}>
+          <CheckCircle2 size={64} style={{ color: 'var(--success)', margin: '0 auto 20px', display: 'block', opacity: 0.7 }} />
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 10 }}>Queue Complete!</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 28, lineHeight: 1.7 }}>
+            Great work! You've disposed all contacts in your queue.
+          </p>
+          <button className="btn btn-primary" style={{ padding: '12px 28px' }} onClick={fetchNext}>
+            <RotateCw size={16} /> Refresh Queue
+          </button>
+        </div>
       </div>
     );
   }
 
   const { contact, remaining, total, disposed } = data;
-  const fields = contact.fields || {};
+  const fields   = contact.fields || {};
   const progress = total > 0 ? Math.round((disposed / total) * 100) : 0;
+  const isRecall = contact.disposition === 'CallNotAnswered';
+  const isCallback = data.type === 'callback_due';
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-      {/* Notifications */}
-      {notifications.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          {notifications.map(notif => (
-            <div key={notif.id} className={`glass-panel`} style={{
-              padding: '12px 16px',
-              marginBottom: '8px',
-              borderLeft: `4px solid ${notif.type === 'appointment' ? '#8b5cf6' : '#06b6d4'}`,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span>{notif.message}</span>
-              <button 
-                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+    <div>
+      {/* Toast notifications */}
+      <div style={{ position: 'fixed', top: 76, right: 20, zIndex: 1500, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 360 }}>
+        {toasts.map(t => (
+          <div key={t.id} className="glass-panel animate-fade-up" style={{
+            padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            borderLeft: `4px solid ${t.type === 'appointment' ? '#8b5cf6' : '#06b6d4'}`,
+          }}>
+            <span style={{ fontSize: '0.875rem' }}>{t.msg}</span>
+            <button className="btn btn-ghost btn-icon" style={{ padding: 4 }} onClick={() => removeToast(t.id)}><X size={14} /></button>
+          </div>
+        ))}
+      </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', gap: '16px' }} className="workflow-header">
+      {/* Header */}
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <PhoneCall className="text-primary" size={32} /> Agent Workflow
+          <h1 className="page-title" style={{ fontSize: 'var(--h1)' }}>
+            <PhoneCall size={24} style={{ color: 'var(--primary)' }} /> Agent Workflow
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }} className="workflow-subtext">
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Contacting: <strong>{fields.Name || fields.name || 'Unknown Contact'}</strong></p>
-            {contact.disposition === 'CallNotAnswered' && (
-              <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', animation: 'pulse 2s infinite' }}>
-                <RotateCw size={14} /> RECALL!
-              </span>
-            )}
-            {data.type === 'callback_due' && (
-              <span className="badge badge-info" style={{ display: 'flex', alignItems: 'center', gap: '4px', animation: 'pulse 2s infinite' }}>
-                <Clock size={14} /> CALLBACK!
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+              Calling: <strong style={{ color: 'var(--text-primary)' }}>{fields.Name || fields.name || 'Unknown'}</strong>
+            </p>
+            {isRecall   && <span className="badge badge-warning"><RotateCw size={11} /> RECALL</span>}
+            {isCallback && <span className="badge badge-cyan"><Clock size={11} /> CALLBACK</span>}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }} className="workflow-progress-badge">
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Queue Progress</div>
-          <div className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '1rem' }}>
-            {remaining} Remaining
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Queue Progress</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.4rem', fontWeight: 800 }}>{remaining}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>remaining</span>
           </div>
         </div>
       </div>
 
-      {/* Upcoming Appointments */}
-      {data.upcomingAppointments && data.upcomingAppointments.length > 0 && (
-        <div className="glass-panel" style={{ marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', color: 'white' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={16} /> Upcoming Appointments
-          </h3>
-          {data.upcomingAppointments.map(apt => (
-            <div key={apt._id} style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-              {apt.fields?.Name || apt.fields?.name} - {new Date(apt.appointmentDt).toLocaleString()}
-            </div>
-          ))}
+      {/* Progress bar */}
+      <div style={{ marginBottom: 'var(--gap)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+          <span>{disposed} of {total} disposed</span>
+          <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{progress}%</span>
+        </div>
+        <div className="progress-bar-track" style={{ height: 8 }}>
+          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      {/* Upcoming appointments banner */}
+      {data.upcomingAppointments?.length > 0 && (
+        <div className="glass-panel" style={{
+          marginBottom: 'var(--gap)', padding: '14px 18px',
+          background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+          border: 'none', display: 'flex', gap: 12, alignItems: 'flex-start',
+        }}>
+          <Calendar size={18} style={{ color: '#fff', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Upcoming Appointments</div>
+            {data.upcomingAppointments.map(a => (
+              <div key={a._id} style={{ fontSize: '0.875rem', color: '#fff', opacity: 0.9 }}>
+                {a.fields?.Name || a.fields?.name} — {new Date(a.appointmentDt).toLocaleString()}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-          <span>{disposed} of {total} contacts disposed</span>
-          <span>{progress}%</span>
-        </div>
-        <div style={{ height: '8px', background: 'var(--bg-surface)', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.5s ease' }}></div>
-        </div>
-      </div>
-
-      <div className="workflow-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px', alignItems: 'start' }}>
-        <div className="glass-panel" style={{ padding: '32px' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database size={20} className="text-primary" /> Contact Details
+      {/* Two-panel layout */}
+      <div className="workflow-grid">
+        {/* Contact details */}
+        <div className="glass-panel" style={{ padding: 'var(--card-p)' }}>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Database size={16} style={{ color: 'var(--primary)' }} /> Contact Details
           </h2>
-          
-          <div className="contact-details-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="contact-detail-grid">
             {Object.entries(fields).map(([k, v]) => (
-              <div key={k} style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'capitalize' }}>{k}</label>
-                <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{String(v) || '—'}</div>
+              <div key={k} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{k}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', wordBreak: 'break-word' }}>{String(v) || '—'}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '32px' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LayoutPanelLeft size={20} className="text-primary" /> Disposition
+        {/* Disposition panel */}
+        <div className="glass-panel" style={{ padding: 'var(--card-p)' }}>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <LayoutPanelLeft size={16} style={{ color: 'var(--primary)' }} /> Disposition
           </h2>
-          
-          <form onSubmit={handleDispose}>
-            <div className="input-group">
-              <label>Outcome *</label>
-              <select 
-                className="input-field" 
-                value={dispForm.disposition} 
-                onChange={e => setDispForm({...dispForm, disposition: e.target.value})}
-                required
-              >
-                <option value="">-- Select Outcome --</option>
-                {DISPS.map(d => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </select>
-            </div>
 
+          {/* Outcome pills */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+            {DISPS.map(d => (
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => setDispForm(p => ({ ...p, disposition: p.disposition === d.key ? '' : d.key }))}
+                style={{
+                  padding: '10px 8px',
+                  borderRadius: 'var(--r-md)',
+                  border: dispForm.disposition === d.key ? `2px solid ${d.color}` : '1px solid var(--border)',
+                  background: dispForm.disposition === d.key ? `${d.color}18` : 'var(--bg-surface-2)',
+                  color: dispForm.disposition === d.key ? d.color : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  transition: 'all var(--t-fast)',
+                  fontFamily: 'var(--font)',
+                  textAlign: 'center',
+                }}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleDispose}>
             {dispForm.disposition === 'Appointment' && (
               <div className="input-group">
                 <label>Date & Time *</label>
-                <input 
-                  type="datetime-local" 
-                  className="input-field" 
-                  value={dispForm.appointmentDt} 
-                  onChange={e => setDispForm({...dispForm, appointmentDt: e.target.value})}
-                  required
-                />
+                <input type="datetime-local" className="input-field" value={dispForm.appointmentDt} onChange={e => setDispForm(p => ({ ...p, appointmentDt: e.target.value }))} required />
               </div>
             )}
-
             {dispForm.disposition === 'Lead' && (
               <div className="input-group">
-                <label>Lead Amount (Currency) *</label>
-                <input 
-                  type="number" 
-                  className="input-field" 
-                  placeholder="Enter final deal amount"
-                  value={dispForm.leadAmount} 
-                  onChange={e => setDispForm({...dispForm, leadAmount: e.target.value})}
-                  min="0"
-                  step="0.01"
-                  required
-                />
+                <label>Lead Amount (₹) *</label>
+                <input type="number" className="input-field" placeholder="Enter deal amount" value={dispForm.leadAmount} onChange={e => setDispForm(p => ({ ...p, leadAmount: e.target.value }))} min="0" step="0.01" required />
               </div>
             )}
-
             {dispForm.disposition === 'CallBack' && (
               <div className="input-group">
                 <label>Callback Date & Time *</label>
-                <input 
-                  type="datetime-local" 
-                  className="input-field" 
-                  value={dispForm.callBackDt} 
-                  onChange={e => setDispForm({...dispForm, callBackDt: e.target.value})}
-                  min={new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16)} // Minimum 1 hour from now
-                  required
-                />
-                <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                  Schedule callback at least 1 hour from now
-                </small>
+                <input type="datetime-local" className="input-field" value={dispForm.callBackDt} onChange={e => setDispForm(p => ({ ...p, callBackDt: e.target.value }))}
+                  min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)} required />
+                <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Schedule at least 1 hour from now</small>
               </div>
             )}
-
             <div className="input-group">
               <label>Remarks</label>
-              <textarea 
-                className="input-field" 
-                rows="4" 
-                value={dispForm.remarks} 
-                onChange={e => setDispForm({...dispForm, remarks: e.target.value})}
-                placeholder="Enter call notes..."
-              />
+              <textarea className="input-field" rows="4" value={dispForm.remarks} onChange={e => setDispForm(p => ({ ...p, remarks: e.target.value }))} placeholder="Call notes…" />
             </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', marginTop: '16px', height: '48px' }}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', height: 48, marginTop: 4 }}
               disabled={!dispForm.disposition || submitting}
             >
-              {submitting ? 'Submitting...' : 'Next Contact'} <Check size={18} style={{ marginLeft: '8px' }} />
+              {submitting
+                ? <span className="animate-spin" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block' }} />
+                : <><Check size={16} /> Next Contact</>
+              }
             </button>
           </form>
         </div>
       </div>
+
       <style>{`
-        .workflow-header {
-          flex-direction: row;
+        .workflow-grid {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: var(--gap);
+          align-items: start;
         }
-        @media (max-width: 768px) {
-          .workflow-header {
-            flex-direction: column;
-            align-items: flex-start !important;
-          }
-          .workflow-progress-badge {
-            text-align: left !important;
-            width: 100%;
-          }
-          .workflow-progress-badge .badge {
-            width: 100%;
-            justify-content: center;
-          }
-          .workflow-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .contact-details-grid {
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-          }
+        .contact-detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
         }
-        @media (max-width: 480px) {
-          .workflow-subtext {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 4px !important;
-          }
+        @media (max-width: 1024px) {
+          .workflow-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+          .contact-detail-grid { grid-template-columns: 1fr; gap: 12px; }
         }
       `}</style>
     </div>

@@ -1,9 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  LayoutDashboard, Users, Upload, Database, Star, Calendar, 
-  Layers, Download, LogOut, Sparkles, X, ChevronLeft, ChevronRight 
+import {
+  LayoutDashboard, Users, Upload, Database, Star, Calendar,
+  Layers, Download, LogOut, Sparkles, X, ChevronLeft, ChevronRight,
+  PhoneCall, BarChart2
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
@@ -11,204 +12,278 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const role = user?.role || 'agent';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   const getInitials = (name) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   };
 
+  const roleColor = role === 'admin' ? '#f59e0b' : role === 'tl' ? '#6366f1' : '#10b981';
+  const roleLabel = role === 'admin' ? 'Admin Panel' : role === 'tl' ? 'Team Lead' : 'Agent';
+
   const adminItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/users', icon: Users, label: 'Users' },
-    { path: '/upload', icon: Upload, label: 'Upload Data' },
-    { path: '/contacts', icon: Database, label: 'All Contacts' },
-    { path: '/leads', icon: Star, label: 'Leads' },
-    { path: '/appointments', icon: Calendar, label: 'Appointments' },
-    { path: '/reports', icon: Download, label: 'Reports' },
+    { path: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/users',        icon: Users,           label: 'Users' },
+    { path: '/upload',       icon: Upload,          label: 'Upload Data' },
+    { path: '/contacts',     icon: Database,        label: 'All Contacts' },
+    { path: '/leads',        icon: Star,            label: 'Leads' },
+    { path: '/appointments', icon: Calendar,        label: 'Appointments' },
+    { path: '/reports',      icon: BarChart2,       label: 'Reports' },
   ];
-
   const tlItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/upload', icon: Upload, label: 'Upload Data' },
-    { path: '/contacts', icon: Database, label: 'Team Contacts' },
-    { path: '/leads', icon: Star, label: 'Leads' },
-    { path: '/appointments', icon: Calendar, label: 'Appointments' },
-    { path: '/agent_queues', icon: Layers, label: 'Agent Queues' },
-    { path: '/reports', icon: Download, label: 'Reports' },
+    { path: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/upload',       icon: Upload,          label: 'Upload Data' },
+    { path: '/contacts',     icon: Database,        label: 'Team Contacts' },
+    { path: '/leads',        icon: Star,            label: 'Leads' },
+    { path: '/appointments', icon: Calendar,        label: 'Appointments' },
+    { path: '/reports',      icon: BarChart2,       label: 'Reports' },
   ];
-
   const agentItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/workflow', icon: Database, label: 'Workflow' },
-    { path: '/leads', icon: Star, label: 'My Leads' },
-    { path: '/appointments', icon: Calendar, label: 'My Appointments' },
+    { path: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/workflow',     icon: PhoneCall,       label: 'Workflow' },
+    { path: '/leads',        icon: Star,            label: 'My Leads' },
+    { path: '/appointments', icon: Calendar,        label: 'My Appointments' },
   ];
 
   const items = role === 'admin' ? adminItems : role === 'tl' ? tlItems : agentItems;
-
-  const currentWidth = isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)';
+  const w = isCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)';
 
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           onClick={onClose}
           style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
-            zIndex: 998, transition: 'opacity 0.3s ease'
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 998,
           }}
-          className="mobile-only"
         />
       )}
 
-      <div 
-        style={{ 
-          width: isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)', 
-          height: '100vh', 
-          background: 'var(--bg-surface)', 
-          borderRight: '1px solid var(--border-color)', 
-          display: 'flex', 
-          flexDirection: 'column',
-          position: 'fixed', 
-          left: 0, 
-          top: 0, 
-          zIndex: 1000,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        }} 
-        className={`sidebar-container ${isOpen ? 'mobile-open' : ''}`}
+      <aside
+        className={`crm-sidebar${isOpen ? ' sidebar-open' : ''}`}
+        style={{ width: w }}
       >
-        
-        {/* Toggle Button for Desktop */}
-        <button 
+        {/* Collapse toggle — desktop only */}
+        <button
+          className="sidebar-collapse-btn hide-tablet"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="desktop-only"
-          style={{
-            position: 'absolute', right: '-12px', top: '32px',
-            width: '24px', height: '24px', borderRadius: '50%',
-            background: 'var(--primary)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px var(--primary-glow)',
-            zIndex: 1001
-          }}
+          title={isCollapsed ? 'Expand' : 'Collapse'}
         >
-          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {isCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
         </button>
 
         {/* Brand */}
-        <div style={{ 
-          padding: isCollapsed ? '24px 0' : '24px 20px', 
-          borderBottom: '1px solid var(--border-color)', 
-          display: 'flex', 
-          justifyContent: isCollapsed ? 'center' : 'space-between', 
-          alignItems: 'center' 
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
-              width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '10px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
-              boxShadow: '0 0 10px var(--primary-glow)',
-              flexShrink: 0
-            }}>
-              <Sparkles size={20} />
-            </div>
-            {!isCollapsed && (
-              <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: '700', letterSpacing: '-0.5px' }}>Spike DMS</h2>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {role === 'admin' ? 'Admin Panel' : role === 'tl' ? 'Team Lead' : 'Agent'}
-                </p>
-              </div>
-            )}
+        <div className="sidebar-brand">
+          <div className="sidebar-logo">
+            <Sparkles size={18} />
           </div>
           {!isCollapsed && (
-            <button 
-              onClick={onClose} 
-              className="mobile-only"
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
-            >
-              <X size={24} />
+            <div className="sidebar-brand-text">
+              <span className="sidebar-brand-name">Spike CRM</span>
+              <span className="sidebar-brand-role" style={{ color: roleColor }}>{roleLabel}</span>
+            </div>
+          )}
+          {!isCollapsed && (
+            <button className="btn btn-ghost btn-icon sidebar-close-mobile" onClick={onClose}>
+              <X size={18} />
             </button>
           )}
         </div>
 
-        {/* Navigation */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: isCollapsed ? '20px 8px' : '20px 12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {items.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <NavLink 
-                  key={index}
-                  to={item.path}
-                  title={isCollapsed ? item.label : ''}
-                  onClick={() => { if(window.innerWidth <= 1024) onClose(); }}
-                  style={({ isActive }) => ({
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: isCollapsed ? 'center' : 'flex-start',
-                    gap: '12px', 
-                    padding: isCollapsed ? '12px' : '12px 16px',
-                    borderRadius: '10px', textDecoration: 'none',
-                    color: isActive ? 'var(--primary)' : 'var(--text-primary)',
-                    background: isActive ? 'var(--primary-glow)' : 'transparent',
-                    fontWeight: isActive ? '600' : '500',
-                    transition: 'all 0.2s ease'
-                  })}
-                >
-                  <Icon size={20} style={{ flexShrink: 0 }} />
-                  {!isCollapsed && <span style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.label}</span>}
-                </NavLink>
-              );
-            })}
-          </div>
-        </div>
+        {/* Nav */}
+        <nav className="sidebar-nav">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                title={isCollapsed ? item.label : ''}
+                onClick={() => { if (window.innerWidth <= 1024) onClose(); }}
+                className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
+                style={isCollapsed ? { justifyContent: 'center' } : {}}
+              >
+                <Icon size={19} className="sidebar-nav-icon" />
+                {!isCollapsed && <span>{item.label}</span>}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-        {/* User Profile Footer */}
-        <div style={{ 
-          padding: isCollapsed ? '20px 0' : '20px', 
-          borderTop: '1px solid var(--border-color)', 
-          background: 'var(--bg-surface)' 
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-              <div style={{ 
-                width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-surface-hover)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold',
-                color: role === 'admin' ? '#f59e0b' : role === 'tl' ? '#3b82f6' : '#10b981',
-                flexShrink: 0
-              }}>
-                {getInitials(user?.name)}
-              </div>
-              {!isCollapsed && (
-                <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{user?.username}</div>
-                </div>
-              )}
-            </div>
-            {!isCollapsed && (
-              <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '8px' }}>
-                <LogOut size={18} />
-              </button>
-            )}
+        {/* User profile footer */}
+        <div className="sidebar-footer" style={isCollapsed ? { padding: '16px 0', justifyContent: 'center' } : {}}>
+          <div className="avatar avatar-md sidebar-avatar" style={{ background: `${roleColor}22`, color: roleColor, flexShrink: 0 }}>
+            {getInitials(user?.name)}
           </div>
+          {!isCollapsed && (
+            <>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{user?.name}</div>
+                <div className="sidebar-user-handle">@{user?.username}</div>
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={handleLogout} title="Logout">
+                <LogOut size={16} />
+              </button>
+            </>
+          )}
         </div>
-      </div>
+      </aside>
+
       <style>{`
+        .crm-sidebar {
+          height: 100vh;
+          background: rgba(255,255,255,0.88);
+          backdrop-filter: blur(24px) saturate(180%);
+          -webkit-backdrop-filter: blur(24px) saturate(180%);
+          border-right: 1px solid var(--border);
+          box-shadow: 4px 0 24px rgba(37,99,235,0.07);
+          display: flex;
+          flex-direction: column;
+          position: fixed;
+          left: 0; top: 0;
+          z-index: 999;
+          transition: width var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+          overflow: hidden;
+        }
+
+        /* Collapse toggle button */
+        .sidebar-collapse-btn {
+          position: absolute;
+          right: -12px; top: 28px;
+          width: 24px; height: 24px;
+          border-radius: 50%;
+          background: var(--primary);
+          color: #fff;
+          border: 2px solid #fff;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          z-index: 10;
+          transition: all var(--t-fast);
+          box-shadow: var(--shadow-primary);
+        }
+        .sidebar-collapse-btn:hover { background: var(--primary-hover); }
+
+        /* Brand section */
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 20px 16px;
+          border-bottom: 1px solid var(--border);
+          min-height: var(--header-height);
+          flex-shrink: 0;
+          overflow: hidden;
+          background: rgba(37,99,235,0.03);
+        }
+        .sidebar-logo {
+          width: 36px; height: 36px;
+          border-radius: var(--r-md);
+          background: linear-gradient(135deg, var(--primary), var(--violet));
+          display: flex; align-items: center; justify-content: center;
+          color: #fff;
+          box-shadow: var(--shadow-primary);
+          flex-shrink: 0;
+        }
+        .sidebar-brand-text {
+          display: flex; flex-direction: column;
+          overflow: hidden; flex: 1;
+        }
+        .sidebar-brand-name {
+          font-size: 0.95rem; font-weight: 800;
+          color: var(--text-primary);
+          white-space: nowrap;
+        }
+        .sidebar-brand-role {
+          font-size: 0.65rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          white-space: nowrap;
+        }
+        .sidebar-close-mobile { display: none; }
+
+        /* Nav */
+        .sidebar-nav {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 12px 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .sidebar-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 10px 12px;
+          border-radius: var(--r-md);
+          text-decoration: none;
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: all var(--t-fast) var(--ease);
+          white-space: nowrap;
+          position: relative;
+          overflow: hidden;
+        }
+        .sidebar-nav-item:hover {
+          background: rgba(37,99,235,0.07);
+          color: var(--primary);
+        }
+        .sidebar-nav-item.active {
+          background: var(--primary-light);
+          color: var(--primary);
+          font-weight: 700;
+          border: 1px solid var(--border-accent);
+        }
+        .sidebar-nav-item.active::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 20%; bottom: 20%;
+          width: 3px;
+          background: var(--primary);
+          border-radius: 0 var(--r-full) var(--r-full) 0;
+        }
+        .sidebar-nav-icon { flex-shrink: 0; }
+
+        /* Footer */
+        .sidebar-footer {
+          padding: 14px 16px;
+          border-top: 1px solid var(--border);
+          background: rgba(37,99,235,0.03);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-shrink: 0;
+        }
+        .sidebar-user-info { flex: 1; min-width: 0; }
+        .sidebar-user-name {
+          font-size: 0.85rem; font-weight: 700;
+          color: var(--text-primary);
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .sidebar-user-handle {
+          font-size: 0.72rem; color: var(--text-muted);
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        /* Mobile */
         @media (max-width: 1024px) {
-          .sidebar-container {
+          .crm-sidebar {
             transform: translateX(-100%);
-            width: 280px !important;
+            width: var(--sidebar-width) !important;
+            box-shadow: 8px 0 40px rgba(37,99,235,0.15);
           }
-          .sidebar-container.mobile-open {
+          .crm-sidebar.sidebar-open {
             transform: translateX(0);
           }
+          .sidebar-close-mobile { display: flex !important; }
         }
       `}</style>
     </>

@@ -2,228 +2,191 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import api from '../utils/api';
-import { Users, PhoneCall, Star, Calendar, Clock, XCircle, BarChart3, TrendingUp, Database } from 'lucide-react';
+import {
+  Users, PhoneCall, Star, Calendar, Clock,
+  XCircle, TrendingUp, Database, RefreshCw
+} from 'lucide-react';
 
-const StatCard = ({ title, value, subtext, icon: Icon, colorClass, gradient }) => (
-  <div className="glass-panel" style={{ padding: 'var(--card-padding)', position: 'relative', overflow: 'hidden' }}>
-    <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: gradient, filter: 'blur(40px)', opacity: 0.5, borderRadius: '50%' }}></div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>{title}</div>
-      <div className={colorClass} style={{ padding: '8px', borderRadius: '12px', background: 'var(--bg-surface)' }}>
-        <Icon size={20} />
+/* ── Skeleton card ── */
+const SkeletonCard = () => (
+  <div className="glass-panel" style={{ padding: 'var(--card-p)', overflow: 'hidden' }}>
+    <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 20 }} />
+    <div className="skeleton" style={{ height: 36, width: '45%', marginBottom: 12 }} />
+    <div className="skeleton" style={{ height: 12, width: '70%' }} />
+  </div>
+);
+
+/* ── Stat card ── */
+const StatCard = ({ title, value, subtext, icon: Icon, accent, delay = 0 }) => (
+  <div
+    className="glass-panel stat-card"
+    style={{ padding: 'var(--card-p)', animationDelay: `${delay}ms` }}
+  >
+    <div className="stat-card-top">
+      <span className="stat-card-title">{title}</span>
+      <div className="stat-card-icon" style={{ background: `${accent}18`, color: accent }}>
+        <Icon size={18} />
       </div>
     </div>
-    <div style={{ fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
-      {value}
-    </div>
-    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{subtext}</div>
+    <div className="stat-card-value">{value}</div>
+    <div className="stat-card-sub">{subtext}</div>
+    {/* Decorative glow blob */}
+    <div style={{
+      position: 'absolute', bottom: -20, right: -20,
+      width: 100, height: 100,
+      background: accent, opacity: 0.06,
+      borderRadius: '50%', filter: 'blur(24px)',
+      pointerEvents: 'none',
+    }} />
   </div>
 );
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { socket } = useSocket();
-  const [stats, setStats] = useState({ total: 0, pending: 0, lead: 0, appointment: 0, callBack: 0, doNotCall: 0 });
+  const [stats, setStats]   = useState(null);
   const [queues, setQueues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
     try {
       const statsRes = await api.get('/contacts/stats');
-      const statsData = statsRes.data;
-      
-      setStats({
-        ...statsData,
-        totalLeadValue: statsData.totalLeadAmount || 0
-      });
-      
+      setStats({ ...statsRes.data, totalLeadValue: statsRes.data.totalLeadAmount || 0 });
       if (user?.role !== 'agent') {
         const queuesRes = await api.get('/contacts/agent-queues');
         setQueues(queuesRes.data || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+    } catch (err) {
+      console.error('Dashboard fetch failed:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
-
-    if (socket) {
-      // Listen for real-time updates
-      socket.on('contacts_updated', () => {
-        fetchDashboardData(); // Refresh data when contacts are updated
-      });
-      
-      socket.on('contact_disposed', fetchDashboardData);
-      socket.on('lead_disposed', fetchDashboardData);
-      socket.on('dashboard_update', fetchDashboardData);
-      socket.on('batch_uploaded', fetchDashboardData);
-      socket.on('users_updated', fetchDashboardData);
-      socket.on('appointment_scheduled', fetchDashboardData);
-      socket.on('appointment_cancelled', fetchDashboardData);
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('contacts_updated', fetchDashboardData);
-        socket.off('contact_disposed', fetchDashboardData);
-        socket.off('lead_disposed', fetchDashboardData);
-        socket.off('dashboard_update', fetchDashboardData);
-        socket.off('batch_uploaded', fetchDashboardData);
-        socket.off('users_updated', fetchDashboardData);
-        socket.off('appointment_scheduled', fetchDashboardData);
-        socket.off('appointment_cancelled', fetchDashboardData);
-      }
-    };
+    if (!socket) return;
+    const events = [
+      'contacts_updated', 'contact_disposed', 'lead_disposed',
+      'dashboard_update', 'batch_uploaded', 'users_updated',
+      'appointment_scheduled', 'appointment_cancelled',
+    ];
+    const handler = () => fetchDashboardData(true);
+    events.forEach(e => socket.on(e, handler));
+    return () => events.forEach(e => socket.off(e, handler));
   }, [socket, user]);
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-        <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)' }}></div>
-      </div>
-    );
-  }
+  const statCards = stats ? [
+    { title: 'Total Contacts',   value: stats.total || 0,                         subtext: 'In system',               icon: Users,     accent: '#6366f1' },
+    { title: 'Pending Queue',    value: stats.pending || 0,                        subtext: 'Awaiting disposition',    icon: Clock,     accent: '#f59e0b' },
+    { title: 'Leads Converted',  value: stats.lead || 0,                           subtext: 'Total leads',             icon: Star,      accent: '#10b981' },
+    { title: 'Total Revenue',    value: `₹${(stats.totalLeadValue || 0).toLocaleString()}`, subtext: 'Aggregate lead value', icon: TrendingUp, accent: '#8b5cf6' },
+    { title: 'Appointments',     value: stats.appointment || 0,                    subtext: 'Scheduled',               icon: Calendar,  accent: '#a855f7' },
+    { title: 'Call Backs',       value: stats.callBack || 0,                       subtext: 'Follow-up required',      icon: PhoneCall, accent: '#06b6d4' },
+    { title: 'Do Not Call',      value: stats.doNotCall || 0,                      subtext: 'Excluded contacts',       icon: XCircle,   accent: '#64748b' },
+  ] : [];
 
   return (
     <div>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        marginBottom: '32px',
-        gap: '16px'
-      }} className="dashboard-header-container">
+      {/* Header */}
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px' }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Welcome back, {user?.name}. Here's what's happening today.</p>
+          <h1 className="page-title" style={{ fontSize: 'var(--h1)' }}>Dashboard</h1>
+          <p className="page-subtitle">
+            Welcome back, <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong>. Here's what's happening today.
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div className="badge badge-success" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'currentColor', display: 'inline-block', animation: 'pulse-glow 2s infinite' }}></span>
-            Live Updates Active
-          </div>
-        </div>
+        <button
+          className="btn btn-outline"
+          onClick={() => fetchDashboardData(true)}
+          disabled={refreshing || loading}
+          style={{ gap: 7 }}
+        >
+          <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+          <span className="hide-mobile">Refresh</span>
+        </button>
       </div>
 
-      <div className="grid-cards" style={{ marginBottom: '32px' }}>
-        <StatCard 
-          title="Total Contacts" 
-          value={stats.total || 0} 
-          subtext="In system" 
-          icon={Users} 
-          colorClass="text-blue-500"
-          gradient="var(--primary)"
-        />
-        <StatCard 
-          title="Pending Queue" 
-          value={stats.pending || 0} 
-          subtext="Awaiting disposition" 
-          icon={Clock} 
-          colorClass="text-amber-500"
-          gradient="var(--warning)"
-        />
-        <StatCard 
-          title="Leads Converted" 
-          value={stats.lead || 0} 
-          subtext="Total leads" 
-          icon={Star} 
-          colorClass="text-emerald-500"
-          gradient="var(--success)"
-        />
-        <StatCard 
-          title="Total Revenue" 
-          value={`₹${stats.totalLeadValue?.toLocaleString() || 0}`} 
-          subtext="Aggregate lead value" 
-          icon={Database} 
-          colorClass="text-violet-500"
-          gradient="#8b5cf6"
-        />
-        <StatCard 
-          title="Appointments" 
-          value={stats.appointment || 0} 
-          subtext="Scheduled" 
-          icon={Calendar} 
-          colorClass="text-purple-500"
-          gradient="#8b5cf6"
-        />
-        <StatCard 
-          title="Call Backs" 
-          value={stats.callBack || 0} 
-          subtext="Follow up required" 
-          icon={PhoneCall} 
-          colorClass="text-cyan-500"
-          gradient="#06b6d4"
-        />
-        <StatCard 
-          title="Do Not Call" 
-          value={stats.doNotCall || 0} 
-          subtext="Excluded contacts" 
-          icon={XCircle} 
-          colorClass="text-slate-500"
-          gradient="#64748b"
-        />
+      {/* Stat cards */}
+      <div className="grid-stats" style={{ marginBottom: 'var(--gap)' }}>
+        {loading
+          ? Array.from({ length: 7 }).map((_, i) => <SkeletonCard key={i} />)
+          : statCards.map((c, i) => (
+              <StatCard key={c.title} {...c} delay={i * 50} />
+            ))
+        }
       </div>
 
-      {user?.role !== 'agent' && queues.length > 0 && (
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BarChart3 size={20} className="text-primary" />
-              Agent Queue Status
+      {/* Agent queue table */}
+      {!loading && user?.role !== 'agent' && queues.length > 0 && (
+        <div className="glass-panel" style={{ overflow: 'hidden' }}>
+          <div style={{
+            padding: '18px 22px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Database size={17} style={{ color: 'var(--primary)' }} /> Agent Queue Status
             </h2>
-            <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={fetchDashboardData}>
-              Refresh
-            </button>
+            <span className="badge badge-primary">{queues.length} agents</span>
           </div>
-          
+
           <div className="table-responsive">
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <table className="crm-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Agent</th>
-                  {user?.role === 'admin' && <th style={{ padding: '12px 16px', fontWeight: '600' }}>Team Leader</th>}
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Total</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Pending</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Disposed</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Leads</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Lead Value</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Appts</th>
-                  <th style={{ padding: '12px 16px', fontWeight: '600' }}>Progress</th>
+                <tr>
+                  <th>Agent</th>
+                  {user?.role === 'admin' && <th>Team Lead</th>}
+                  <th>Total</th>
+                  <th>Pending</th>
+                  <th>Disposed</th>
+                  <th>Leads</th>
+                  <th>Lead Value</th>
+                  <th>Appts</th>
+                  <th>Progress</th>
                 </tr>
               </thead>
               <tbody>
                 {queues.map((q, i) => {
                   const progress = q.total > 0 ? Math.round((q.disposed / q.total) * 100) : 0;
                   return (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '16px', fontWeight: '500' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold', color: 'white' }}>
+                    <tr key={i}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div
+                            className="avatar avatar-sm"
+                            style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.7rem', fontWeight: 800 }}
+                          >
                             {q.agent?.name?.charAt(0) || 'U'}
                           </div>
-                          {q.agent?.name || 'Unknown'}
+                          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{q.agent?.name || 'Unknown'}</span>
                         </div>
                       </td>
                       {user?.role === 'admin' && (
-                        <td style={{ padding: '16px' }}>
-                          <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>{q.tlName}</span>
+                        <td>
+                          <span className="badge badge-warning">{q.tlName || '—'}</span>
                         </td>
                       )}
-                      <td style={{ padding: '16px' }}>{q.total || 0}</td>
-                      <td style={{ padding: '16px', color: 'var(--warning)', fontWeight: '600' }}>{q.pending || 0}</td>
-                      <td style={{ padding: '16px' }}>{q.disposed || 0}</td>
-                      <td style={{ padding: '16px', color: 'var(--success)', fontWeight: '600' }}>{q.lead || 0}</td>
-                      <td style={{ padding: '16px', fontWeight: '600' }}>₹{q.totalLeadAmount?.toLocaleString() || 0}</td>
-                      <td style={{ padding: '16px', color: '#a855f7', fontWeight: '600' }}>{q.appointment || 0}</td>
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ flex: 1, height: '6px', background: 'var(--bg-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary)', borderRadius: '4px' }}></div>
+                      <td style={{ fontWeight: 600 }}>{q.total || 0}</td>
+                      <td><span style={{ color: 'var(--warning)', fontWeight: 700 }}>{q.pending || 0}</span></td>
+                      <td>{q.disposed || 0}</td>
+                      <td><span style={{ color: 'var(--success)', fontWeight: 700 }}>{q.lead || 0}</span></td>
+                      <td style={{ fontWeight: 700 }}>₹{(q.totalLeadAmount || 0).toLocaleString()}</td>
+                      <td><span style={{ color: 'var(--violet)', fontWeight: 700 }}>{q.appointment || 0}</span></td>
+                      <td style={{ minWidth: 120 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div className="progress-bar-track" style={{ flex: 1 }}>
+                            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
                           </div>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minWidth: '35px' }}>{progress}%</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', minWidth: 36 }}>
+                            {progress}%
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -236,20 +199,44 @@ const Dashboard = () => {
       )}
 
       <style>{`
-        .dashboard-header-container {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
+        .stat-card {
+          position: relative;
+          overflow: hidden;
+          animation: fadeUp var(--t-slow) var(--ease) both;
+          transition: transform var(--t-base), box-shadow var(--t-base);
         }
-        @media (max-width: 768px) {
-          .dashboard-header-container {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          .dashboard-header-container .badge {
-            width: 100%;
-            justify-content: center;
-          }
+        .stat-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+        }
+        .stat-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .stat-card-title {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .stat-card-icon {
+          width: 36px; height: 36px;
+          border-radius: var(--r-sm);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .stat-card-value {
+          font-size: clamp(1.7rem, 4vw, 2.2rem);
+          font-weight: 800;
+          color: var(--text-primary);
+          margin-bottom: 6px;
+          line-height: 1;
+        }
+        .stat-card-sub {
+          font-size: 0.78rem;
+          color: var(--text-muted);
         }
       `}</style>
     </div>
