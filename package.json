@@ -2,12 +2,9 @@
   "name": "crm-root",
   "private": true,
   "version": "1.0.0",
-  "workspaces": [
-    "server",
-    "client"
-  ],
+  "description": "Root package for CRM",
   "scripts": {
-    "install:all": "npm install",
+    "postinstall": "cd server && npm install",
     "start": "cd server && node server.js",
     "build": "npm install"
   },
