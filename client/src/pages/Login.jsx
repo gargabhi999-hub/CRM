@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, LogIn, Sparkles, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { ShieldAlert, LogIn, Sparkles, Eye, EyeOff } from 'lucide-react';
 
-const DEMO_CREDS = [
-  { role: 'Admin',      user: 'admin',       pass: 'admin123', color: '#f59e0b' },
-  { role: 'Team Lead',  user: 'tl_rohit',    pass: 'tl123',    color: '#6366f1' },
-  { role: 'Agent',      user: 'agent_priya', pass: 'ag123',    color: '#10b981' },
-];
+
 
 const Login = () => {
   const [username, setUsername]   = useState('');
@@ -15,7 +11,6 @@ const Login = () => {
   const [showPass, setShowPass]   = useState(false);
   const [error, setError]         = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [copied, setCopied]       = useState(null);
   const { login } = useAuth();
   const navigate  = useNavigate();
 
@@ -37,17 +32,7 @@ const Login = () => {
     }
   };
 
-  const fillCreds = (cred) => {
-    setUsername(cred.user);
-    setPassword(cred.pass);
-    setError('');
-  };
 
-  const copyCred = (text, key) => {
-    navigator.clipboard?.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1500);
-  };
 
   return (
     <div className="login-root">
@@ -153,35 +138,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="login-demo">
-            <div className="login-demo-label">Quick Access — Demo Credentials</div>
-            <div className="login-demo-list">
-              {DEMO_CREDS.map((c) => (
-                <button
-                  key={c.role}
-                  className="login-demo-chip"
-                  onClick={() => fillCreds(c)}
-                  style={{ borderColor: `${c.color}40` }}
-                  type="button"
-                >
-                  <span className="login-demo-dot" style={{ background: c.color }} />
-                  <div className="login-demo-info">
-                    <span className="login-demo-role" style={{ color: c.color }}>{c.role}</span>
-                    <span className="login-demo-un">{c.user}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); copyCred(`${c.user} / ${c.pass}`, c.role); }}
-                    className="login-copy-btn"
-                    title="Copy credentials"
-                  >
-                    {copied === c.role ? <Check size={13} color="var(--success)" /> : <Copy size={13} />}
-                  </button>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -313,51 +270,7 @@ const Login = () => {
           margin-bottom: 20px;
         }
 
-        /* Demo credentials */
-        .login-demo {
-          margin-top: 28px;
-          padding-top: 24px;
-          border-top: 1px solid var(--border);
-        }
-        .login-demo-label {
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: var(--text-muted);
-          margin-bottom: 12px;
-        }
-        .login-demo-list { display: flex; flex-direction: column; gap: 8px; }
-        .login-demo-chip {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 12px;
-          background: var(--bg-surface-2);
-          border: 1px solid;
-          border-radius: var(--r-md);
-          cursor: pointer;
-          transition: all var(--t-fast);
-          text-align: left;
-          width: 100%;
-          font-family: var(--font);
-        }
-        .login-demo-chip:hover { background: var(--bg-surface-hover); }
-        .login-demo-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .login-demo-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
-        .login-demo-role { font-size: 0.72rem; font-weight: 700; }
-        .login-demo-un   { font-size: 0.78rem; color: var(--text-secondary); }
-        .login-copy-btn {
-          background: none; border: none;
-          color: var(--text-muted); cursor: pointer;
-          padding: 4px; display: flex;
-          transition: color var(--t-fast);
-        }
-        .login-copy-btn:hover { color: var(--text-primary); }
+
       `}</style>
     </div>
   );
