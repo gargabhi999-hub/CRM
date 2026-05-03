@@ -22,8 +22,10 @@
   
   /* Responsive Variables */
   --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
   --header-height: 64px;
 }
+
 
 [data-theme='dark'] {
   --bg-color: #0f172a;

@@ -5,10 +5,16 @@ import { Menu, Sparkles } from 'lucide-react';
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-color)' }}>
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+      />
       
       <div style={{ 
         flex: 1, 
@@ -16,7 +22,8 @@ const Layout = () => {
         flexDirection: 'column',
         minWidth: 0,
         height: '100vh',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         {/* Mobile Header */}
         <div 
@@ -62,8 +69,9 @@ const Layout = () => {
       <style>{`
         @media (min-width: 1025px) {
           .main-content {
-            margin-left: var(--sidebar-width);
+            margin-left: ${isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'};
             padding: 32px 40px !important;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
         }
         @media (max-width: 768px) {
@@ -75,6 +83,7 @@ const Layout = () => {
     </div>
   );
 };
+
 
 export default Layout;
 
