@@ -8,7 +8,12 @@ const Layout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-color)' }}>
+    <div style={{ 
+      display: 'flex', 
+      minHeight: '100vh', 
+      background: 'var(--bg-color)',
+      '--dynamic-sidebar-width': isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'
+    }}>
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
@@ -69,7 +74,7 @@ const Layout = () => {
       <style>{`
         @media (min-width: 1025px) {
           .main-content {
-            margin-left: ${isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'};
+            margin-left: var(--dynamic-sidebar-width);
             padding: 32px 40px !important;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
@@ -84,6 +89,6 @@ const Layout = () => {
   );
 };
 
-
 export default Layout;
+
 

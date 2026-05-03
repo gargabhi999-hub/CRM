@@ -89,6 +89,7 @@ const Dashboard = () => {
   }
 
   return (
+    <div>
       <div style={{ 
         display: 'flex', 
         flexDirection: window.innerWidth < 768 ? 'column' : 'row',
@@ -110,7 +111,6 @@ const Dashboard = () => {
       </div>
 
       <div className="grid-cards" style={{ marginBottom: '32px' }}>
-
         <StatCard 
           title="Total Contacts" 
           value={stats.total || 0} 
@@ -238,6 +238,7 @@ const Dashboard = () => {
       )}
     </div>
   );
+
 };
 
 export default Dashboard;

@@ -196,4 +196,3 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
 };
 
 export default Sidebar;
-
