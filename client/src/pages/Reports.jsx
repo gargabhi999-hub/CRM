@@ -89,12 +89,10 @@ const Reports = () => {
     <div>
       <div style={{ 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         justifyContent: 'space-between', 
-        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
         marginBottom: '32px',
         gap: '20px'
-      }} className="page-header">
+      }} className="reports-header-container">
         <div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <PieChartIcon className="text-primary" size={32} /> Reports & Export
@@ -102,27 +100,27 @@ const Reports = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>View analytics and export complete contact data</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: window.innerWidth < 768 ? '100%' : 'auto' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }} className="reports-actions">
           <button 
             className="btn btn-outline" 
             onClick={() => handleExport('csv')}
             disabled={isExporting}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <Download size={16} /> {window.innerWidth < 480 ? 'CSV' : (isExporting ? 'Exporting...' : 'Export CSV')}
+            <Download size={16} /> <span className="hidden-mobile">{isExporting ? 'Exporting...' : 'Export CSV'}</span><span className="mobile-only">CSV</span>
           </button>
           <button 
             className="btn btn-primary" 
             onClick={() => handleExport('xlsx')}
             disabled={isExporting}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <FileSpreadsheet size={16} /> {window.innerWidth < 480 ? 'Excel' : (isExporting ? 'Exporting...' : 'Export Excel')}
+            <FileSpreadsheet size={16} /> <span className="hidden-mobile">{isExporting ? 'Exporting...' : 'Export Excel'}</span><span className="mobile-only">Excel</span>
           </button>
         </div>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr' }}>
+      <div className="reports-grid" style={{ display: 'grid', gap: '24px' }}>
 
         <div className="glass-panel" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Disposition Distribution</h2>
@@ -152,6 +150,32 @@ const Reports = () => {
           </div>
         </div>
       </div>
+      <style>{`
+        .reports-header-container {
+          flex-direction: row;
+          align-items: center;
+        }
+        .reports-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        @media (max-width: 1024px) {
+          .reports-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .reports-header-container {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          .reports-actions {
+            width: 100%;
+          }
+          .reports-actions button {
+            flex: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };

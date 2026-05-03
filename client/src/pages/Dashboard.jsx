@@ -5,7 +5,7 @@ import api from '../utils/api';
 import { Users, PhoneCall, Star, Calendar, Clock, XCircle, BarChart3, TrendingUp, Database } from 'lucide-react';
 
 const StatCard = ({ title, value, subtext, icon: Icon, colorClass, gradient }) => (
-  <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+  <div className="glass-panel" style={{ padding: 'var(--card-padding)', position: 'relative', overflow: 'hidden' }}>
     <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: gradient, filter: 'blur(40px)', opacity: 0.5, borderRadius: '50%' }}></div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
       <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>{title}</div>
@@ -13,7 +13,7 @@ const StatCard = ({ title, value, subtext, icon: Icon, colorClass, gradient }) =
         <Icon size={20} />
       </div>
     </div>
-    <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+    <div style={{ fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
       {value}
     </div>
     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{subtext}</div>
@@ -92,12 +92,10 @@ const Dashboard = () => {
     <div>
       <div style={{ 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         justifyContent: 'space-between', 
-        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
         marginBottom: '32px',
         gap: '16px'
-      }} className="dashboard-header">
+      }} className="dashboard-header-container">
         <div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px' }}>Dashboard</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Welcome back, {user?.name}. Here's what's happening today.</p>
@@ -181,7 +179,7 @@ const Dashboard = () => {
             </button>
           </div>
           
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -236,9 +234,26 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        .dashboard-header-container {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+        }
+        @media (max-width: 768px) {
+          .dashboard-header-container {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .dashboard-header-container .badge {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </div>
   );
-
 };
 
 export default Dashboard;

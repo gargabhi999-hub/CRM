@@ -42,17 +42,17 @@ const MyAppointments = () => {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', gap: '16px' }} className="appointments-header">
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Calendar className="text-primary" size={40} /> My Appointments
+          <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 2.5rem)', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Calendar className="text-primary" size={clampIcon(32, 40)} /> My Appointments
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>
             Your scheduled callbacks and meetings with potential leads
           </p>
         </div>
-        <div className="badge badge-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
-          {appointments.length} Scheduled
+        <div className="badge badge-primary appointment-count-badge" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
+          {appointments.length} <span className="hidden-mobile">Scheduled</span><span className="mobile-only">Slots</span>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ const MyAppointments = () => {
             return (
               <div 
                 key={app._id} 
-                className="glass-panel" 
+                className="glass-panel appointment-card" 
                 style={{ 
                   padding: '0', 
                   overflow: 'hidden',
@@ -83,7 +83,7 @@ const MyAppointments = () => {
                   display: 'flex'
                 }}
               >
-                <div style={{ 
+                <div className="appointment-date-side" style={{ 
                   width: '120px', 
                   background: today ? 'var(--primary)' : 'var(--bg-surface-hover)',
                   color: today ? 'white' : 'var(--text-primary)',
@@ -91,7 +91,8 @@ const MyAppointments = () => {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '20px'
+                  padding: '20px',
+                  flexShrink: 0
                 }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px', opacity: 0.8 }}>
                     {today ? 'TODAY' : new Date(app.appointmentDt).toLocaleDateString('en-IN', { month: 'short' })}
@@ -104,14 +105,14 @@ const MyAppointments = () => {
                   </div>
                 </div>
 
-                <div style={{ flex: 1, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
+                <div className="appointment-content" style={{ flex: 1, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
                     <h3 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {name} {today && <Bell size={18} className="text-primary" style={{ animation: 'bounce 2s infinite' }} />}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span> {today && <Bell size={18} className="text-primary" style={{ animation: 'bounce 2s infinite', flexShrink: 0 }} />}
                     </h3>
-                    <div style={{ display: 'flex', gap: '20px', color: 'var(--text-secondary)' }}>
+                    <div className="appointment-meta" style={{ display: 'flex', gap: '20px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={16} /> {phone}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={16} /> Scheduled by {app.agentName}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={16} /> <span className="hidden-mobile">Scheduled by</span> {app.agentName}</span>
                     </div>
                     {app.remarks && (
                       <div style={{ marginTop: '12px', padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: '8px', fontSize: '0.9rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
@@ -119,8 +120,8 @@ const MyAppointments = () => {
                       </div>
                     )}
                   </div>
-                  <button className="btn btn-primary" style={{ padding: '12px 24px' }}>
-                    Contact Now <ChevronRight size={18} />
+                  <button className="btn btn-primary appointment-action-btn" style={{ padding: '12px 24px', flexShrink: 0 }}>
+                    <span className="hidden-mobile">Contact Now</span> <ChevronRight size={18} />
                   </button>
                 </div>
               </div>
@@ -128,8 +129,47 @@ const MyAppointments = () => {
           })}
         </div>
       )}
+      <style>{`
+        .appointments-header {
+          flex-direction: row;
+        }
+        @media (max-width: 768px) {
+          .appointments-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          .appointment-count-badge {
+            width: 100%;
+            justify-content: center;
+          }
+          .appointment-card {
+            flex-direction: column;
+          }
+          .appointment-date-side {
+            width: 100% !important;
+            flex-direction: row !important;
+            gap: 20px;
+            padding: 12px !important;
+            justify-content: center !important;
+          }
+          .appointment-date-side div {
+            margin: 0 !important;
+          }
+          .appointment-content {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 16px !important;
+          }
+          .appointment-action-btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </div>
   );
 };
+
+const clampIcon = (min, max) => `clamp(${min}px, 5vw, ${max}px)`;
 
 export default MyAppointments;

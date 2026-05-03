@@ -32,8 +32,8 @@ const Login = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
-      <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '40px' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', padding: 'var(--container-padding)' }}>
+      <div className="glass-panel animate-fade-in login-card" style={{ width: '100%', maxWidth: '420px', padding: '40px' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ 
@@ -100,6 +100,18 @@ const Login = () => {
         </div>
 
       </div>
+      <style>{`
+        @media (max-width: 480px) {
+          .login-card {
+            padding: 32px 20px !important;
+            border-radius: 20px !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

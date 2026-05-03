@@ -132,12 +132,10 @@ const Upload = () => {
     <div>
       <div style={{ 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         justifyContent: 'space-between', 
-        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
         marginBottom: '32px',
         gap: '20px'
-      }} className="page-header">
+      }} className="upload-header-container">
         <div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UploadCloud className="text-primary" size={32} /> Data Import
@@ -146,8 +144,9 @@ const Upload = () => {
         </div>
       </div>
 
-      <div className="grid-cards" style={{ 
-        gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 2fr', 
+      <div className="upload-grid" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 2fr', 
         alignItems: 'start',
         gap: '24px'
       }}>
@@ -226,7 +225,7 @@ const Upload = () => {
             <div className="badge badge-primary">{batches.length} Batches</div>
           </div>
           
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead style={{ background: 'var(--bg-surface-hover)' }}>
                 <tr>
@@ -315,6 +314,26 @@ const Upload = () => {
           </div>
         </div>
       )}
+      <style>{`
+        .upload-header-container {
+          flex-direction: row;
+          align-items: center;
+        }
+        @media (max-width: 768px) {
+          .upload-header-container {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+        }
+        .upload-grid {
+          grid-template-columns: 1fr 2fr;
+        }
+        @media (max-width: 1024px) {
+          .upload-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

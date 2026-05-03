@@ -146,26 +146,26 @@ const Workflow = () => {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', gap: '16px' }} className="workflow-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <PhoneCall className="text-primary" size={32} /> Agent Workflow
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }} className="workflow-subtext">
             <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Contacting: <strong>{fields.Name || fields.name || 'Unknown Contact'}</strong></p>
             {contact.disposition === 'CallNotAnswered' && (
               <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px', animation: 'pulse 2s infinite' }}>
-                <RotateCw size={14} /> RECALL NOW! (Previously Unanswered)
+                <RotateCw size={14} /> RECALL!
               </span>
             )}
             {data.type === 'callback_due' && (
               <span className="badge badge-info" style={{ display: 'flex', alignItems: 'center', gap: '4px', animation: 'pulse 2s infinite' }}>
-                <Clock size={14} /> CALLBACK DUE!
+                <Clock size={14} /> CALLBACK!
               </span>
             )}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right' }} className="workflow-progress-badge">
           <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Queue Progress</div>
           <div className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '1rem' }}>
             {remaining} Remaining
@@ -197,17 +197,17 @@ const Workflow = () => {
         </div>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: '1fr 400px', alignItems: 'start' }}>
+      <div className="workflow-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px', alignItems: 'start' }}>
         <div className="glass-panel" style={{ padding: '32px' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Database size={20} className="text-primary" /> Contact Details
           </h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="contact-details-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {Object.entries(fields).map(([k, v]) => (
               <div key={k} style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'capitalize' }}>{k}</label>
-                <div style={{ fontWeight: '600' }}>{String(v) || '—'}</div>
+                <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{String(v) || '—'}</div>
               </div>
             ))}
           </div>
@@ -300,6 +300,39 @@ const Workflow = () => {
           </form>
         </div>
       </div>
+      <style>{`
+        .workflow-header {
+          flex-direction: row;
+        }
+        @media (max-width: 768px) {
+          .workflow-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          .workflow-progress-badge {
+            text-align: left !important;
+            width: 100%;
+          }
+          .workflow-progress-badge .badge {
+            width: 100%;
+            justify-content: center;
+          }
+          .workflow-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .contact-details-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .workflow-subtext {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 4px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

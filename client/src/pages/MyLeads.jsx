@@ -53,17 +53,17 @@ const MyLeads = () => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', gap: '16px' }} className="leads-page-header">
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Star className="text-success" size={40} fill="var(--success)" /> My Leads
+          <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 2.5rem)', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Star className="text-success" size={clampIcon(32, 40)} fill="var(--success)" /> My Leads
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>
             Tracking your converted sales and revenue performance
           </p>
         </div>
-        <div className="badge badge-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
-          {filteredLeads.length} Converted Leads
+        <div className="badge badge-primary leads-count-badge" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
+          {filteredLeads.length} <span className="hidden-mobile">Converted Leads</span><span className="mobile-only">Leads</span>
         </div>
       </div>
 
@@ -145,16 +145,17 @@ const MyLeads = () => {
             const phone = fields.Phone || fields.phone || fields.Mobile || 'N/A';
             
             return (
-              <div key={lead._id} className="glass-panel lead-card" style={{ 
+              <div key={lead._id} className="glass-panel lead-card-item" style={{ 
                 padding: '24px', 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center',
                 borderLeft: `4px solid var(--success)`,
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)'
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                gap: '24px'
               }}>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1 }}>
-                  <div style={{ 
+                <div className="lead-card-main" style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1 }}>
+                  <div className="lead-icon-container" style={{ 
                     width: '64px', 
                     height: '64px', 
                     borderRadius: '16px', 
@@ -163,13 +164,14 @@ const MyLeads = () => {
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     color: 'white',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    flexShrink: 0
                   }}>
                     <Star size={32} fill="white" />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '4px', color: 'var(--success)' }}>{name}</h3>
-                    <div style={{ display: 'flex', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '4px', color: 'var(--success)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</h3>
+                    <div style={{ display: 'flex', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.95rem', flexWrap: 'wrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><PhoneCall size={14} /> {phone}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> {new Date(lead.lastModified).toLocaleDateString()}</span>
                       {lead.remarks && (
@@ -181,7 +183,7 @@ const MyLeads = () => {
                   </div>
                 </div>
                 
-                <div style={{ textAlign: 'right', minWidth: '200px' }}>
+                <div className="lead-card-amount" style={{ textAlign: 'right', minWidth: '150px' }}>
                   <div style={{ 
                     fontSize: '0.8rem', 
                     color: 'var(--success)', 
@@ -210,8 +212,42 @@ const MyLeads = () => {
           })}
         </div>
       )}
+      <style>{`
+        .leads-page-header {
+          flex-direction: row;
+        }
+        @media (max-width: 768px) {
+          .leads-page-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          .leads-count-badge {
+            width: 100%;
+            justify-content: center;
+          }
+          .lead-card-item {
+            flex-direction: column;
+            align-items: stretch !important;
+            padding: 20px !important;
+          }
+          .lead-card-amount {
+            text-align: left !important;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+          }
+        }
+        @media (max-width: 480px) {
+          .lead-card-main {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
+
+const clampIcon = (min, max) => `clamp(${min}px, 5vw, ${max}px)`;
 
 export default MyLeads;

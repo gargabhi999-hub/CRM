@@ -114,30 +114,27 @@ const Users = () => {
     <div>
       <div style={{ 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         justifyContent: 'space-between', 
-        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
         marginBottom: '32px',
         gap: '20px'
-      }} className="page-header">
+      }} className="users-header-container">
         <div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UsersIcon className="text-primary" size={32} /> User Management
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage administrators, team leads, and agents</p>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()} style={{ width: window.innerWidth < 768 ? '100%' : 'auto' }}>
+        <button className="btn btn-primary add-user-btn" onClick={() => openModal()}>
           <Plus size={18} /> Add New User
         </button>
       </div>
 
-      <div className="glass-panel" style={{ 
+      <div className="glass-panel users-filter-bar" style={{ 
         marginBottom: '24px', 
         padding: '16px 24px', 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         gap: '20px', 
-        alignItems: window.innerWidth < 768 ? 'stretch' : 'center' 
+        alignItems: 'center' 
       }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
@@ -157,7 +154,7 @@ const Users = () => {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ overflowX: 'auto' }}>
+      <div className="glass-panel table-responsive">
 
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'var(--bg-surface-hover)', borderBottom: '1px solid var(--border-color)' }}>
@@ -282,6 +279,28 @@ const Users = () => {
           </div>
         </div>
       )}
+      <style>{`
+        .users-header-container {
+          flex-direction: row;
+          align-items: center;
+        }
+        .users-filter-bar {
+          flex-direction: row;
+        }
+        @media (max-width: 768px) {
+          .users-header-container {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+          .add-user-btn {
+            width: 100%;
+          }
+          .users-filter-bar {
+            flex-direction: column;
+            align-items: stretch !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -11,9 +11,8 @@ const Layout = () => {
     <div style={{ 
       display: 'flex', 
       minHeight: '100vh', 
-      background: 'var(--bg-color)',
-      '--dynamic-sidebar-width': isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'
-    }}>
+      background: 'var(--bg-color)'
+    }} className="layout-root">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
@@ -28,8 +27,8 @@ const Layout = () => {
         minWidth: 0,
         height: '100vh',
         overflow: 'hidden',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}>
+        transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }} className="main-wrapper">
         {/* Mobile Header */}
         <div 
           className="mobile-only"
@@ -41,7 +40,8 @@ const Layout = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0 20px',
-            zIndex: 900
+            zIndex: 900,
+            flexShrink: 0
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -62,26 +62,33 @@ const Layout = () => {
         <div style={{ 
           flex: 1, 
           overflowY: 'auto', 
-          padding: '24px',
           width: '100%'
         }} className="main-content">
-          <div className="animate-fade-in" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div className="animate-fade-in" style={{ 
+            maxWidth: '1600px', 
+            margin: '0 auto', 
+            padding: 'var(--container-padding)' 
+          }}>
             <Outlet />
           </div>
         </div>
       </div>
 
       <style>{`
+        .layout-root {
+          --dynamic-sidebar-width: ${isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'};
+        }
+        
         @media (min-width: 1025px) {
-          .main-content {
+          .main-wrapper {
             margin-left: var(--dynamic-sidebar-width);
-            padding: 32px 40px !important;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
         }
-        @media (max-width: 768px) {
-          .main-content {
-            padding: 20px 16px !important;
+
+        @media (max-width: 1024px) {
+          .main-wrapper {
+            margin-left: 0;
           }
         }
       `}</style>

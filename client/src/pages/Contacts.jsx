@@ -176,12 +176,10 @@ const Contacts = ({ filterType }) => {
     <div>
       <div style={{ 
         display: 'flex', 
-        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
         justifyContent: 'space-between', 
-        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
         marginBottom: '32px',
         gap: '20px'
-      }} className="page-header">
+      }} className="page-header-container">
         <div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             {icon} {title}
@@ -190,10 +188,10 @@ const Contacts = ({ filterType }) => {
             {filterType === 'workflow' ? 'Your pending contacts to call' : `Manage and view your ${title.toLowerCase()}`}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: window.innerWidth < 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }} className="header-actions">
           {selectedIds.length > 0 && user?.role === 'admin' && (
-            <button className="btn btn-danger" onClick={handleBulkDelete} style={{ flex: 1 }}>
-              <Trash2 size={18} /> {window.innerWidth < 480 ? 'Delete' : `Delete ${selectedIds.length}`}
+            <button className="btn btn-danger" onClick={handleBulkDelete}>
+              <Trash2 size={18} /> <span className="hidden-mobile">Delete {selectedIds.length}</span><span className="mobile-only">Delete</span>
             </button>
           )}
           <div className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
@@ -203,15 +201,14 @@ const Contacts = ({ filterType }) => {
       </div>
       
       {filterType === 'leads' && (
-        <div className="glass-panel" style={{ 
+        <div className="glass-panel revenue-banner" style={{ 
           marginBottom: '24px', 
           padding: '24px', 
           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
           color: 'white',
           display: 'flex',
-          flexDirection: window.innerWidth < 640 ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: window.innerWidth < 640 ? 'flex-start' : 'center',
+          alignItems: 'center',
           gap: '20px',
           boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.3)',
           border: 'none'
@@ -220,7 +217,7 @@ const Contacts = ({ filterType }) => {
             <div style={{ fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL REVENUE GENERATED</div>
             <div style={{ fontSize: 'clamp(1.8rem, 8vw, 2.5rem)', fontWeight: '800', letterSpacing: '-0.02em' }}>₹{totalLeadValue.toLocaleString()}</div>
           </div>
-          <div style={{ textAlign: window.innerWidth < 640 ? 'left' : 'right' }}>
+          <div className="banner-secondary-info">
             <div style={{ fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL LEADS</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{filteredContacts.length}</div>
           </div>
@@ -307,7 +304,7 @@ const Contacts = ({ filterType }) => {
                 </div>
 
                 <div style={{ flex: 1, background: 'var(--bg-color)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '0.85rem' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 480 ? '1fr' : '1fr 1fr', gap: '8px' }}>
+                  <div className="contact-fields-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     {(filterType === 'leads' ? Object.entries(fields) : Object.entries(fields).slice(0, 4)).map(([k, v]) => (
                       <div key={k} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <span style={{ color: 'var(--text-secondary)', marginRight: '4px' }}>{k}:</span>
@@ -473,6 +470,44 @@ const Contacts = ({ filterType }) => {
           </div>
         </div>
       )}
+      <style>{`
+        .page-header-container {
+          flex-direction: row;
+          align-items: center;
+        }
+        .revenue-banner {
+          flex-direction: row;
+          align-items: center;
+        }
+        .banner-secondary-info {
+          text-align: right;
+        }
+        @media (max-width: 768px) {
+          .page-header-container {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .header-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .header-actions button {
+            flex: 1;
+          }
+          .revenue-banner {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .banner-secondary-info {
+            text-align: left;
+          }
+        }
+        @media (max-width: 480px) {
+          .contact-fields-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

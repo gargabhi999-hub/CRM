@@ -52,7 +52,7 @@ const AppointmentNotifier = () => {
   if (activeAppointments.length === 0) return null;
 
   return (
-    <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '350px' }}>
+    <div className="appointment-notifier-container" style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '350px', width: 'calc(100% - 48px)' }}>
       {activeAppointments.map(app => (
         <div key={app._id} className="glass-panel animate-slide-in" style={{ 
           background: 'rgba(255, 255, 255, 0.95)', 
@@ -84,6 +84,18 @@ const AppointmentNotifier = () => {
           </button>
         </div>
       ))}
+      <style>{`
+        @media (max-width: 640px) {
+          .appointment-notifier-container {
+            top: auto !important;
+            bottom: 24px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: calc(100% - 24px) !important;
+            max-width: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

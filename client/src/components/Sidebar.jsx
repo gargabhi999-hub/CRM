@@ -67,13 +67,22 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
         />
       )}
 
-      <div style={{ 
-        width: currentWidth, height: '100vh', background: 'var(--bg-surface)', 
-        borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column',
-        position: 'fixed', left: 0, top: 0, zIndex: 1000,
-        transform: isOpen ? 'translateX(0)' : (window.innerWidth <= 1024 ? 'translateX(-100%)' : 'translateX(0)'),
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      }} className="sidebar-container">
+      <div 
+        style={{ 
+          width: isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)', 
+          height: '100vh', 
+          background: 'var(--bg-surface)', 
+          borderRight: '1px solid var(--border-color)', 
+          display: 'flex', 
+          flexDirection: 'column',
+          position: 'fixed', 
+          left: 0, 
+          top: 0, 
+          zIndex: 1000,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }} 
+        className={`sidebar-container ${isOpen ? 'mobile-open' : ''}`}
+      >
         
         {/* Toggle Button for Desktop */}
         <button 
@@ -191,6 +200,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
           </div>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 1024px) {
+          .sidebar-container {
+            transform: translateX(-100%);
+            width: 280px !important;
+          }
+          .sidebar-container.mobile-open {
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </>
   );
 };
