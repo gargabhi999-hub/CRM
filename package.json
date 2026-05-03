@@ -2,13 +2,14 @@
   "name": "crm-root",
   "private": true,
   "version": "1.0.0",
-  "description": "Root package for CRM",
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
-    "install:server": "cd server && npm install",
-    "install:client": "cd client && npm install",
-    "build:client": "cd client && npm run build",
-    "start": "cd server && npm start",
-    "build": "cd server && npm install"
+    "install:all": "npm install",
+    "start": "cd server && node server.js",
+    "build": "npm install"
   },
   "engines": {
     "node": ">=18.0.0"
