@@ -33,35 +33,36 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
+    
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       'https://crm-eight-sage.vercel.app',
       'https://crm-orcin-one.vercel.app',
       'https://your-crm-portal.vercel.app',
-    ].filter(Boolean);
+    ].filter(Boolean).map(o => o.toLowerCase().replace(/\/$/, ''));
     
-    const isLocalhost = origin.startsWith('http://localhost:') || 
-                        origin.startsWith('http://127.0.0.1:') ||
-                        origin === 'http://localhost' ||
-                        origin === 'http://127.0.0.1';
+    const isLocalhost = normalizedOrigin.startsWith('http://localhost') || 
+                        normalizedOrigin.startsWith('http://127.0.0.1');
 
-    const isVercel = origin.endsWith('.vercel.app') || 
-                     origin.includes('vercel.app');
+    const isVercel = normalizedOrigin.endsWith('.vercel.app') || 
+                     normalizedOrigin.includes('vercel.app');
 
-    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
-    const isExplicitlyAllowed = allowedOrigins.some(o => o.toLowerCase().replace(/\/$/, '') === normalizedOrigin);
+    const isExplicitlyAllowed = allowedOrigins.includes(normalizedOrigin);
 
     if (isExplicitlyAllowed || isLocalhost || isVercel) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
+      console.warn('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 };
+
 
 
 app.use(cors(corsOptions));
