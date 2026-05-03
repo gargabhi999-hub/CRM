@@ -1,0 +1,27 @@
+services:
+  # Web Service
+  - type: web
+    name: crm-backend
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-crm-portal.vercel.app
+      - key: MONGODB_URI
+        value: mongodb+srv://gargabhi999:CRM123@crm.hxehni4.mongodb.net/?appName=CRM
+      - key: MAX_FILE_SIZE
+        value: 10mb
+    
+    # Auto-deploy from main branch
+    autoDeploy: true
+    
+    # Health check
+    healthCheckPath: /api/contacts/stats
