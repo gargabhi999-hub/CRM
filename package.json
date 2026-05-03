@@ -1,8 +1,8 @@
 {
-  "name": "crm-root",
+  "name": "spike-crm-root",
   "private": true,
   "version": "1.0.0",
-  "description": "Root package for CRM",
+  "description": "SPIKE CRM",
   "scripts": {
     "postinstall": "cd server && npm install",
     "client-install": "cd client && npm install",

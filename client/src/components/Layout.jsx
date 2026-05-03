@@ -73,10 +73,10 @@ const Layout = () => {
               <Menu size={22} />
             </button>
             <div className="topbar-brand-mobile">
-              <div className="topbar-logo">
-                <Sparkles size={14} />
+              <div className="topbar-logo" style={{ background: '#fff', padding: '4px' }}>
+                <img src="/favicon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
-              <span>Spike CRM</span>
+              <span>SPIKE CRM</span>
             </div>
             {/* Desktop: page title */}
             <h1 className="topbar-page-title hide-mobile">{pageTitle}</h1>

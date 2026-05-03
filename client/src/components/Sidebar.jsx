@@ -79,12 +79,12 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
 
         {/* Brand */}
         <div className="sidebar-brand">
-          <div className="sidebar-logo">
-            <Sparkles size={18} />
+          <div className="sidebar-logo" style={{ background: '#fff', padding: '6px' }}>
+            <img src="/favicon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           {!isCollapsed && (
             <div className="sidebar-brand-text">
-              <span className="sidebar-brand-name">Spike CRM</span>
+              <span className="sidebar-brand-name">SPIKE CRM</span>
               <span className="sidebar-brand-role" style={{ color: roleColor }}>{roleLabel}</span>
             </div>
           )}

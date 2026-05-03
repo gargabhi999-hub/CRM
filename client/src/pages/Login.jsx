@@ -40,9 +40,9 @@ const Login = () => {
       <div className="login-brand-panel">
         <div className="login-brand-content">
           <div className="login-brand-logo">
-            <Sparkles size={36} />
+            <img src="/favicon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <h1 className="login-brand-title">Spike CRM</h1>
+          <h1 className="login-brand-title">SPIKE CRM</h1>
           <p className="login-brand-tagline">
             The intelligent contact management platform for high-performance sales teams.
           </p>
@@ -63,10 +63,10 @@ const Login = () => {
         <div className="login-card animate-fade-up">
           {/* Mobile logo */}
           <div className="login-mobile-logo">
-            <div className="login-brand-logo" style={{ width: 52, height: 52, borderRadius: 14, margin: '0 auto 12px' }}>
-              <Sparkles size={24} />
+            <div className="login-brand-logo" style={{ width: 52, height: 52, borderRadius: 14, margin: '0 auto 12px', background: '#fff', padding: '10px' }}>
+              <img src="/favicon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem' }}>Spike CRM</h2>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem' }}>SPIKE CRM</h2>
           </div>
 
           <h2 className="login-form-title">Welcome back</h2>
