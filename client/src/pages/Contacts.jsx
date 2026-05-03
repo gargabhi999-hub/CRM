@@ -174,22 +174,29 @@ const Contacts = ({ filterType }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
+        marginBottom: '32px',
+        gap: '20px'
+      }} className="page-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             {icon} {title}
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             {filterType === 'workflow' ? 'Your pending contacts to call' : `Manage and view your ${title.toLowerCase()}`}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: window.innerWidth < 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
           {selectedIds.length > 0 && user?.role === 'admin' && (
-            <button className="btn btn-danger" onClick={handleBulkDelete}>
-              <Trash2 size={18} /> Delete {selectedIds.length} Selected
+            <button className="btn btn-danger" onClick={handleBulkDelete} style={{ flex: 1 }}>
+              <Trash2 size={18} /> {window.innerWidth < 480 ? 'Delete' : `Delete ${selectedIds.length}`}
             </button>
           )}
-          <div className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '1rem' }}>
+          <div className="badge badge-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
             {filteredContacts.length} Records
           </div>
         </div>
@@ -202,21 +209,24 @@ const Contacts = ({ filterType }) => {
           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
           color: 'white',
           display: 'flex',
+          flexDirection: window.innerWidth < 640 ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: window.innerWidth < 640 ? 'flex-start' : 'center',
+          gap: '20px',
           boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.3)',
           border: 'none'
         }}>
           <div>
-            <div style={{ fontSize: '0.95rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL REVENUE GENERATED</div>
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>₹{totalLeadValue.toLocaleString()}</div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL REVENUE GENERATED</div>
+            <div style={{ fontSize: 'clamp(1.8rem, 8vw, 2.5rem)', fontWeight: '800', letterSpacing: '-0.02em' }}>₹{totalLeadValue.toLocaleString()}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.95rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL LEADS</div>
+          <div style={{ textAlign: window.innerWidth < 640 ? 'left' : 'right' }}>
+            <div style={{ fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px', fontWeight: '500' }}>TOTAL LEADS</div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700' }}>{filteredContacts.length}</div>
           </div>
         </div>
       )}
+
 
 
       <div className="glass-panel" style={{ marginBottom: '24px', padding: '16px 24px' }}>
@@ -297,7 +307,7 @@ const Contacts = ({ filterType }) => {
                 </div>
 
                 <div style={{ flex: 1, background: 'var(--bg-color)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '0.85rem' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 480 ? '1fr' : '1fr 1fr', gap: '8px' }}>
                     {(filterType === 'leads' ? Object.entries(fields) : Object.entries(fields).slice(0, 4)).map(([k, v]) => (
                       <div key={k} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <span style={{ color: 'var(--text-secondary)', marginRight: '4px' }}>{k}:</span>
@@ -305,6 +315,7 @@ const Contacts = ({ filterType }) => {
                       </div>
                     ))}
                   </div>
+
                   {contact.leadAmount > 0 && (
                     <div style={{ marginTop: '12px', padding: '8px', borderRadius: '4px', background: 'var(--success)', color: 'white', fontWeight: '700', fontSize: '0.9rem', textAlign: 'center' }}>
                       Lead Amount: ₹{contact.leadAmount.toLocaleString()}

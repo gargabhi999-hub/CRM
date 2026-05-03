@@ -87,35 +87,43 @@ const Reports = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
+        marginBottom: '32px',
+        gap: '20px'
+      }} className="page-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <PieChartIcon className="text-primary" size={32} /> Reports & Export
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>View analytics and export complete contact data</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>View analytics and export complete contact data</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: window.innerWidth < 768 ? '100%' : 'auto' }}>
           <button 
             className="btn btn-outline" 
             onClick={() => handleExport('csv')}
             disabled={isExporting}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
           >
-            <Download size={16} /> {isExporting ? 'Exporting...' : 'Export CSV'}
+            <Download size={16} /> {window.innerWidth < 480 ? 'CSV' : (isExporting ? 'Exporting...' : 'Export CSV')}
           </button>
           <button 
             className="btn btn-primary" 
             onClick={() => handleExport('xlsx')}
             disabled={isExporting}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}
           >
-            <FileSpreadsheet size={16} /> {isExporting ? 'Exporting...' : 'Export Excel'}
+            <FileSpreadsheet size={16} /> {window.innerWidth < 480 ? 'Excel' : (isExporting ? 'Exporting...' : 'Export Excel')}
           </button>
         </div>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <div className="grid-cards" style={{ gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr' }}>
+
         <div className="glass-panel" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Disposition Distribution</h2>
           <div style={{ flex: 1, minHeight: '300px', width: '100%' }}>

@@ -112,19 +112,33 @@ const Users = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
+        marginBottom: '32px',
+        gap: '20px'
+      }} className="page-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UsersIcon className="text-primary" size={32} /> User Management
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage administrators, team leads, and agents</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage administrators, team leads, and agents</p>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()}>
+        <button className="btn btn-primary" onClick={() => openModal()} style={{ width: window.innerWidth < 768 ? '100%' : 'auto' }}>
           <Plus size={18} /> Add New User
         </button>
       </div>
 
-      <div className="glass-panel" style={{ marginBottom: '24px', padding: '16px 24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+      <div className="glass-panel" style={{ 
+        marginBottom: '24px', 
+        padding: '16px 24px', 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        gap: '20px', 
+        alignItems: window.innerWidth < 768 ? 'stretch' : 'center' 
+      }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
           <input 
@@ -136,14 +150,15 @@ const Users = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div className="badge badge-primary"><Shield size={14}/> {admins.length} Admins</div>
-          <div className="badge badge-warning"><UserCheck size={14}/> {tls.length} Team Leads</div>
-          <div className="badge badge-success"><UsersIcon size={14}/> {agents.length} Agents</div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="badge badge-primary"><Shield size={14}/> {admins.length}</div>
+          <div className="badge badge-warning"><UserCheck size={14}/> {tls.length}</div>
+          <div className="badge badge-success"><UsersIcon size={14}/> {agents.length}</div>
         </div>
       </div>
 
-      <div className="glass-panel">
+      <div className="glass-panel" style={{ overflowX: 'auto' }}>
+
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'var(--bg-surface-hover)', borderBottom: '1px solid var(--border-color)' }}>
             <tr>

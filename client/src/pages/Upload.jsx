@@ -130,14 +130,28 @@ const Upload = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <UploadCloud className="text-primary" size={32} /> Data Import
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Upload CSV/Excel contacts and assign them to agents in real-time</p>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
+        marginBottom: '32px',
+        gap: '20px'
+      }} className="page-header">
+        <div>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <UploadCloud className="text-primary" size={32} /> Data Import
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Upload CSV/Excel contacts and assign them to agents in real-time</p>
+        </div>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
+      <div className="grid-cards" style={{ 
+        gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 2fr', 
+        alignItems: 'start',
+        gap: '24px'
+      }}>
+
         {/* Upload Form */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>

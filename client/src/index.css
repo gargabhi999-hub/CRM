@@ -19,6 +19,10 @@
   --glass-border: rgba(14, 165, 233, 0.2);
   
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Responsive Variables */
+  --sidebar-width: 260px;
+  --header-height: 64px;
 }
 
 [data-theme='dark'] {
@@ -188,3 +192,30 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
 }
+
+@media (max-width: 768px) {
+  .grid-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .glass-panel {
+    border-radius: 12px;
+  }
+}
+
+/* Helper Classes */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+}
+

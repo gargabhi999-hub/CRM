@@ -89,11 +89,17 @@ const Dashboard = () => {
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', 
+        marginBottom: '32px',
+        gap: '16px'
+      }} className="dashboard-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '8px' }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name}. Here's what's happening today.</p>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: '700', marginBottom: '8px' }}>Dashboard</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Welcome back, {user?.name}. Here's what's happening today.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <div className="badge badge-success" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
@@ -104,6 +110,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid-cards" style={{ marginBottom: '32px' }}>
+
         <StatCard 
           title="Total Contacts" 
           value={stats.total || 0} 
