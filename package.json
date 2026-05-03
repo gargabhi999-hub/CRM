@@ -5,9 +5,12 @@
   "description": "Root package for CRM",
   "scripts": {
     "postinstall": "cd server && npm install",
-    "start": "cd server && node server.js",
-    "build": "npm install"
+    "client-install": "cd client && npm install",
+    "client-build": "cd client && npm run build",
+    "build": "npm install && npm run client-install && npm run client-build",
+    "start": "cd server && node server.js"
   },
+
   "engines": {
     "node": ">=18.0.0"
   }
