@@ -30,7 +30,9 @@ const PORT = process.env.PORT || 3000;
 // CORS configuration for production
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests from Vercel frontend and local development
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       'https://crm-eight-sage.vercel.app',
@@ -38,18 +40,18 @@ const corsOptions = {
       'https://your-crm-portal.vercel.app',
     ].filter(Boolean);
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
     const isLocalhost = origin.startsWith('http://localhost:') || 
                         origin.startsWith('http://127.0.0.1:') ||
                         origin === 'http://localhost' ||
                         origin === 'http://127.0.0.1';
 
-    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
-    const isAllowed = allowedOrigins.some(o => o.toLowerCase().replace(/\/$/, '') === normalizedOrigin);
+    const isVercel = origin.endsWith('.vercel.app') || 
+                     origin.includes('vercel.app');
 
-    if (isAllowed || isLocalhost) {
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
+    const isExplicitlyAllowed = allowedOrigins.some(o => o.toLowerCase().replace(/\/$/, '') === normalizedOrigin);
+
+    if (isExplicitlyAllowed || isLocalhost || isVercel) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -60,6 +62,7 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
+
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
