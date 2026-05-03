@@ -33,6 +33,7 @@ const corsOptions = {
     // Allow requests from Vercel frontend and local development
     const allowedOrigins = [
       process.env.FRONTEND_URL,
+      'https://crm-eight-sage.vercel.app',
       'https://crm-orcin-one.vercel.app',
       'https://your-crm-portal.vercel.app',
     ].filter(Boolean);
@@ -45,7 +46,10 @@ const corsOptions = {
                         origin === 'http://localhost' ||
                         origin === 'http://127.0.0.1';
 
-    if (allowedOrigins.indexOf(origin) !== -1 || isLocalhost) {
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(o => o.toLowerCase().replace(/\/$/, '') === normalizedOrigin);
+
+    if (isAllowed || isLocalhost) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
